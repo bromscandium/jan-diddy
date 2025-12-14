@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "jan-diddy-2-0"
+version = "1.0.0"
+description = "Telegram bot with Tortoise ORM"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[[tool.poetry.packages]]
+include = "app"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+python-telegram-bot = "22.5"
+psycopg2-binary = "2.9.10"
+apscheduler = "^3.11.1"
+python-dotenv = "^1.2.1"
+aiohttp = "3.13.2"
+tortoise-orm = "^0.25.1"
+aerich = "^0.9.2"
+asyncpg = "^0.31.0"
+pydantic-settings = "^2.12"
+
+[tool.aerich]
+tortoise_orm = "app.db.postgres.TORTOISE_ORM"
+location = "./migrations"
+src_folder = "./."
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masassy.api"
