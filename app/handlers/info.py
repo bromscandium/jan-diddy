@@ -104,7 +104,7 @@ async def week(update: Update, context):
     else:
         current_week = ((now - bot_settings.semester_start).days // 7) + 1
         if current_week <= 13:
-            message = f"Sme v {current_week}. týždni semestra."
+            message = f"Sme v {current_week}. týždni semestra. 💀"
         else:
-            message = "Uvidíme sa neskor"
+            message = "Uvidíme sa neskor 😈"
     await update.message.reply_text(message)
