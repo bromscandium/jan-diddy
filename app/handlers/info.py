@@ -7,7 +7,7 @@ from app.utils.decorators import usage_limit
 @usage_limit
 async def rules(update: Update, context):
     await update.message.reply_text(
-        'čítali ste kanál <a href="https://t.me/c/2307996875/4/224676">ASAP</a>?',
+        'čítali ste kanál <a href="https://t.me/c/2307996875/4/378327">ASAP</a>?',
         parse_mode="HTML"
     )
 
@@ -17,7 +17,7 @@ async def moodle(update: Update, context):
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
         from_chat_id=bot_settings.chat_id,
-        message_id=224679,
+        message_id=378329,
         message_thread_id=update.message.message_thread_id,
     )
 
@@ -27,7 +27,7 @@ async def links(update: Update, context):
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
         from_chat_id=bot_settings.chat_id,
-        message_id=224678,
+        message_id=378328,
         message_thread_id=update.message.message_thread_id,
     )
 
@@ -35,7 +35,7 @@ async def links(update: Update, context):
 @usage_limit
 async def scores(update: Update, context):
     await update.message.reply_text(
-        'Čítali ste kanál <a href="https://t.me/c/2307996875/4/224680">ASAP</a>?',
+        'Čítali ste kanál <a href="https://t.me/c/2307996875/4/378330">ASAP</a>?',
         parse_mode="HTML"
     )
 
@@ -45,7 +45,7 @@ async def plan(update: Update, context):
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
         from_chat_id=bot_settings.chat_id,
-        message_id=224681,
+        message_id=378331,
         message_thread_id=update.message.message_thread_id
     )
 
@@ -55,7 +55,7 @@ async def maptuke(update: Update, context):
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
         from_chat_id=bot_settings.chat_id,
-        message_id=224682,
+        message_id=378332,
         message_thread_id=update.message.message_thread_id
     )
 
@@ -65,7 +65,7 @@ async def map5p(update: Update, context):
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
         from_chat_id=bot_settings.chat_id,
-        message_id=224683,
+        message_id=378333,
         message_thread_id=update.message.message_thread_id
     )
 
@@ -75,7 +75,7 @@ async def studijne(update: Update, context):
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
         from_chat_id=bot_settings.chat_id,
-        message_id=224684,
+        message_id=378334,
         message_thread_id=update.message.message_thread_id
     )
 
@@ -85,7 +85,7 @@ async def schedule(update: Update, context):
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
         from_chat_id=bot_settings.chat_id,
-        message_id=224685,
+        message_id=378335,
         message_thread_id=update.message.message_thread_id
     )
 
