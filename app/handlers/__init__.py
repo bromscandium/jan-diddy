@@ -35,7 +35,8 @@ all_commands = {**admin_commands, **info_commands, **fun_commands, **chat_comman
 def setup_handlers(app: Application) -> None:
     for command, handler in all_commands.items():
         app.add_handler(CommandHandler(command, handler))
-    
+
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, fun.bro_monitor))
     app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.COMMAND, chat.start_message))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, events.welcome))
     app.add_handler(

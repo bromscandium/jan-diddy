@@ -1,4 +1,5 @@
 import random
+import re
 from datetime import datetime, timedelta
 
 from telegram import Update
@@ -8,6 +9,27 @@ from app.core.config import settings
 from app.core.http import HttpClient
 from app.services import jokes, predictions
 from app.utils.decorators import general_chat_only, personal_limit
+
+
+def is_bro_detected(text: str) -> bool:
+    if not text:
+        return False
+    n = text.lower()
+    n = n.replace("0", "o").replace("6", "b").replace("p", "r")
+    trans = {"b": "б", "r": "р", "o": "о"}
+    for l, c in trans.items():
+        n = n.replace(l, c)
+    n = re.sub(r"[^а-яё]", "", n)
+    return "бро" in n
+
+
+async def bro_monitor(update: Update, context: CallbackContext):
+    if not update.message or not update.message.text:
+        return
+    if update.effective_user.id not in settings.BANNED_BY_ID:
+        return
+    if is_bro_detected(update.message.text):
+        await update.message.delete()
 
 
 @personal_limit(12000)
