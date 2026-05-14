@@ -25,5 +25,6 @@ async def delete_all_warnings_by_user_id(user_id: int) -> None:
 
 
 async def delete_last_warning_by_user_id(user_id: int) -> None:
-    last_warning = await Warnings.filter(user_id=user_id).latest('created_at')
-    await last_warning.delete()
+    last_warning = await Warnings.filter(user_id=user_id).latest("created_at")
+    if last_warning:
+        await last_warning.delete()

@@ -1,4 +1,6 @@
-from app.handlers import chat, events, admin, info, fun
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
+
+from app.handlers import admin, chat, events, fun, info
 
 admin_commands = {
     "mute": admin.mute,
@@ -15,14 +17,6 @@ info_commands = {
     "rules": info.rules,
     "moodle": info.moodle,
     "links": info.links,
-    "scores": info.scores,
-    "plan": info.plan,
-    "maptuke": info.maptuke,
-    "map5p": info.map5p,
-    "studijne": info.studijne,
-    "schedule": info.schedule,
-    "invite": info.invite,
-    "week": info.week,
 }
 
 fun_commands = {
@@ -30,7 +24,6 @@ fun_commands = {
     "joke": fun.joke,
     "weather": fun.weather,
     "chance": fun.chance,
-    "bless": fun.bless,
 }
 
 chat_commands = {
@@ -39,8 +32,17 @@ chat_commands = {
 
 all_commands = {**admin_commands, **info_commands, **fun_commands, **chat_commands}
 
+def setup_handlers(app: Application) -> None:
+    for command, handler in all_commands.items():
+        app.add_handler(CommandHandler(command, handler))
+    
+    app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.COMMAND, chat.start_message))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, events.welcome))
+    app.add_handler(
+        MessageHandler((filters.ChatType.GROUP | filters.ChatType.SUPERGROUP) & ~filters.COMMAND, events.reaction))
+
 __all__ = [
-    'all_commands',
+    'setup_handlers',
     'events',
     'chat',
 ]

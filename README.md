@@ -1,53 +1,83 @@
 # Jan Diddy 2.0
 
-**Jan Diddy 2.0** is a Telegram bot designed for group chats. It provides administrative tools, fun commands, and informational utilities, with a clear separation of concerns and a modular architecture.
+Modernized Telegram Bot for student group management, built with high performance and reliability in mind.
+
+## Tech Stack
+
+- Python 3.14+
+- python-telegram-bot v22.5 (Async)
+- Tortoise ORM (Async ORM)
+- PostgreSQL (Database)
+- Aerich (Migrations)
+- Loguru (Advanced Logging)
+- Poetry (Dependency Management)
+- Pytest + Polyfactory (Automated Testing)
+- Ruff (Linting & Formatting)
 
 ## Project Structure
 
-The project is organized to keep configuration, database access, handlers, business logic, and utilities clearly separated.
+- app/core/: Configuration, logging, and global HTTP sessions.
+- app/db/: Database connection and ORM settings.
+- app/handlers/: Bot command handlers and event logic.
+- app/models/: Tortoise ORM database models.
+- app/services/: Business logic separated from handlers.
+- app/utils/: Decorators (admin access, rate limits) and helpers.
+- migrations/: Database migration history.
+- tests/: Automated test suite.
 
-```
-jan-diddy-2.0/
-├── app/
-│ ├── core/
-│ │ ├── __init__.py
-│ │ └── config.py        # Pydantic settings configuration
-│ ├── db/
-│ │ ├── __init__.py
-│ │ └── postgres.py      # Tortoise ORM initialization
-│ ├── handlers/
-│ │ ├── __init__.py
-│ │ ├── admin.py         # Admin commands
-│ │ ├── chat.py          # Chat handlers
-│ │ ├── events.py        # Event handlers (welcome, reactions)
-│ │ ├── fun.py           # Fun commands
-│ │ └── info.py          # Info commands
-│ ├── models/
-│ │ ├── __init__.py
-│ │ ├── jokes.py         # Jokes model
-│ │ ├── predictions.py   # Predictions model
-│ │ └── warnings.py      # Warnings model
-│ ├── services/
-│ │ ├── __init__.py
-│ │ ├── jokes.py         # Business logic for jokes
-│ │ ├── predictions.py   # Business logic for predictions
-│ │ └── warnings.py      # Business logic for warnings
-│ ├── utils/
-│ │ ├── __init__.py
-│ │ └── decorators.py    # Rate limiting and chat decorators
-│ └── main.py            # Application entry point
-├── migrations/
-│ └── models/
-│ └── *.py               # Aerich migrations
-├── .env                 # Environment variables
-├── pyproject.toml
-└── README.md
-```
+## Local Development
 
-## Running the Bot
+### 1. Requirements
+- Python 3.14
+- Poetry
+- PostgreSQL
 
-Make sure all dependencies are installed and environment variables are configured, then start the bot with:
-
+### 2. Installation
 ```bash
-python app/main.py
+poetry install
 ```
+
+### 3. Configuration
+Copy .env.sample to .env and fill in your credentials:
+```bash
+cp .env.sample .env
+```
+
+### 4. Database Migrations
+Initialize or upgrade the database schema:
+```bash
+poetry run aerich upgrade
+```
+
+### 5. Running the Bot
+```bash
+poetry run python -m app.main
+```
+
+## Testing & Quality
+
+### Run Tests
+```bash
+poetry run pytest
+```
+
+### Linting
+```bash
+poetry run ruff check .
+```
+
+## Docker & Production (Railway.com)
+
+The project is production-ready with a Dockerfile.
+
+### Build and Run locally:
+```bash
+docker build -t jan-diddy .
+docker run --env-file .env jan-diddy
+```
+
+## Production Features:
+- Automated Migrations: Runs aerich upgrade automatically on startup.
+- Graceful Shutdown: Ensures DB and HTTP connections close cleanly.
+- Global Error Handling: Reports critical errors to the admin group.
+- Timezone Support: Configurable via TIMEZONE env variable.

@@ -1,23 +1,22 @@
-from tortoise import Tortoise
 from telegram.ext import Application
-from app.core.config import bot_settings
+from tortoise import Tortoise
+
+from app.core.config import settings
+from app.core.logger import logger
 
 TORTOISE_ORM = {
-    "connections": {
-        "default": bot_settings.db.url
-    },
-    "apps": {
-        "models": {
-            "models": ["app.models", "aerich.models"],
-            "default_connection": "default"
-        }
-    }
+    "connections": {"default": settings.url},
+    "apps": {"models": {"models": ["app.models", "aerich.models"], "default_connection": "default"}},
+    "use_tz": True,
+    "timezone": settings.TIMEZONE,
 }
+
 
 async def connect_db(app: Application) -> None:
     await Tortoise.init(config=TORTOISE_ORM)
-    print("Connected to database")
+    logger.info("Connected to database")
+
 
 async def close_db(app: Application) -> None:
     await Tortoise.close_connections()
-    print("Closed connection to database")
+    logger.info("Closed connection to database")

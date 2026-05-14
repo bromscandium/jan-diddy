@@ -1,47 +1,32 @@
-from pydantic import Field, field_validator
+from datetime import date
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from datetime import datetime
 
 
-class BaseConfig(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        extra="ignore",
-        populate_by_name=True,
-        env_nested_delimiter = "__"
-    )
+class Settings(BaseSettings):
+    BOT_TOKEN: str
+    WEATHER_API_KEY: str
+    CHAT_ID: int
+    ADMIN_CHAT_ID: int
+    ADMIN_IDS: list[int]
+    GRANT_ADMIN_IDS: list[int]
+    REACTIONS: list[str]
+    SEMESTER_START: date
+    CHAT_LINK: str
+    TIMEZONE: str = "Europe/London"
+    BANNED_BY_ID: list[int]
 
-
-class DbSettings(BaseConfig):
-    user: str
-    password: str
-    host: str
-    port: int
-    db: str
+    USER: str
+    PASSWORD: str
+    HOST: str
+    PORT: int
+    DB: str
 
     @property
     def url(self) -> str:
-        return f"postgres://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"
+        return f"postgres://{self.USER}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{self.DB}"
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_nested_delimiter="__")
 
 
-class BotSettings(BaseConfig):
-    telegram_api_key: str
-    weather_api_key: str
-    chat_id: str
-    admin_chat_id: str
-    admin_ids: list[int]
-    grant_admin_ids: list[int]
-    reactions: list[str]
-    semester_start: str
-    chat_link: str
-    db: DbSettings = Field(default_factory=DbSettings)
-
-    @field_validator('semester_start')
-    @classmethod
-    def parse_semester_start(cls, v):
-        if isinstance(v, str):
-            return datetime.strptime(v, '%Y-%m-%d')
-        return v
-
-
-bot_settings = BotSettings()
+settings = Settings()  # type: ignore
