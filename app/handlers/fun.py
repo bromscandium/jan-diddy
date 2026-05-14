@@ -31,32 +31,6 @@ async def bro_monitor(update: Update, context: CallbackContext):
     if is_bro_detected(update.message.text):
         await update.message.delete()
 
-
-@personal_limit(12000)
-async def bless(update: Update, context: CallbackContext):
-    if not update.message or not update.message.text:
-        return
-
-    text = update.message.text
-    if len(text.split()) < 2:
-        await update.message.reply_text("Prosim, napiste v tomto formate: /bless VasTitul.")
-        return
-
-    new_title = " ".join(text.split()[1:])
-    chat_admins = await context.bot.get_chat_administrators(chat_id=settings.CHAT_ID)
-    user_is_admin = any(admin.user.id == update.message.from_user.id for admin in chat_admins)
-
-    if not user_is_admin:
-        await context.bot.promote_chat_member(
-            chat_id=settings.CHAT_ID, user_id=update.message.from_user.id, can_post_messages=True, can_manage_chat=True
-        )
-
-    await context.bot.set_chat_administrator_custom_title(
-        chat_id=settings.CHAT_ID, user_id=update.message.from_user.id, custom_title=new_title
-    )
-    await update.message.reply_text(f"Tvoj novy titul: {new_title}")
-
-
 @general_chat_only
 @personal_limit(61)
 async def predict(update: Update, context: CallbackContext):

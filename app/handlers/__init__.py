@@ -17,6 +17,14 @@ info_commands = {
     "rules": info.rules,
     "moodle": info.moodle,
     "links": info.links,
+    "scores": info.scores,
+    "plan": info.plan,
+    "maptuke": info.maptuke,
+    "map5p": info.map5p,
+    "studijne": info.studijne,
+    "schedule": info.schedule,
+    "invite": info.invite,
+    "week": info.week
 }
 
 fun_commands = {

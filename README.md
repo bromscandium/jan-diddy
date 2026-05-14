@@ -1,83 +1,81 @@
-# Jan Diddy 2.0
+# Jan Diddy
 
-Modernized Telegram Bot for student group management, built with high performance and reliability in mind.
+Asynchronous Telegram bot built with Python 3.14, python-telegram-bot, and Tortoise ORM. Designed for group management, information distribution, and automated moderation.
 
-## Tech Stack
+## Features
 
-- Python 3.14+
-- python-telegram-bot v22.5 (Async)
-- Tortoise ORM (Async ORM)
-- PostgreSQL (Database)
-- Aerich (Migrations)
-- Loguru (Advanced Logging)
-- Poetry (Dependency Management)
-- Pytest + Polyfactory (Automated Testing)
-- Ruff (Linting & Formatting)
+- Administrative Tools: Full suite of moderation commands including ban, unban, mute, unmute, and a multi-level warning system with automated temporary restrictions.
+- Targeted Content Filter: Aggressive word filter using homoglyph normalization and noise removal, specifically targeting users listed in the banned registry.
+- Information Services: Automated distribution of academic schedules, rules, Moodle links, and semester progress tracking.
+- Entertainment Modules: Weather integration via OpenWeatherMap, random joke generation, and probability predictions.
+- Robust Architecture: Powered by Tortoise ORM with Aerich migrations, Pydantic Settings for configuration, and automated rate limiting.
 
-## Project Structure
+## Technical Stack
 
-- app/core/: Configuration, logging, and global HTTP sessions.
-- app/db/: Database connection and ORM settings.
-- app/handlers/: Bot command handlers and event logic.
-- app/models/: Tortoise ORM database models.
-- app/services/: Business logic separated from handlers.
-- app/utils/: Decorators (admin access, rate limits) and helpers.
-- migrations/: Database migration history.
-- tests/: Automated test suite.
+- Language: Python 3.14
+- Dependency Management: Poetry 2.4.1
+- Database: PostgreSQL (Async via asyncpg)
+- ORM: Tortoise ORM
+- Deployment: Docker, Railway.com
 
-## Local Development
+## Configuration
 
-### 1. Requirements
-- Python 3.14
-- Poetry
-- PostgreSQL
+The application requires the following environment variables. These should be defined in a .env file for local development or within the Railway dashboard for production.
 
-### 2. Installation
-```bash
-poetry install
-```
+- BOT_TOKEN: Telegram Bot API token.
+- WEATHER_API_KEY: OpenWeatherMap API key.
+- DATABASE_URL: Full PostgreSQL connection string (postgresql://user:pass@host:port/db).
+- CHAT_ID: Main group chat ID.
+- ADMIN_CHAT_ID: Group ID for error logs and bot notifications.
+- ADMIN_IDS: List of user IDs with full administrative access.
+- GRANT_ADMIN_IDS: List of user IDs with limited administrative permissions.
+- SEMESTER_START: Date in YYYY-MM-DD format.
+- TIMEZONE: Regional timezone (default: Europe/London).
+- BANNED_BY_ID: List of user IDs subject to the targeted word filter.
 
-### 3. Configuration
-Copy .env.sample to .env and fill in your credentials:
-```bash
-cp .env.sample .env
-```
+## Local Development via Docker
 
-### 4. Database Migrations
-Initialize or upgrade the database schema:
-```bash
-poetry run aerich upgrade
-```
+Ensure Docker and Docker Compose are installed on your system.
 
-### 5. Running the Bot
-```bash
-poetry run python -m app.main
-```
+1. Clone the repository and navigate to the directory.
+2. Create a .env file based on .env.sample.
+3. Execute the following command to build and start the services:
+   
+   docker compose up --build
 
-## Testing & Quality
+The services will be initialized in an isolated network. The database port is not exposed to the host machine for security purposes.
 
-### Run Tests
-```bash
-poetry run pytest
-```
+## Deployment on Railway.com
 
-### Linting
-```bash
-poetry run ruff check .
-```
+This project is optimized for deployment on Railway using the provided Dockerfile.
 
-## Docker & Production (Railway.com)
+1. Create a new project on Railway.
+2. Provision a PostgreSQL instance.
+3. Link your repository or use the Railway CLI:
+   
+   railway link
+   railway up
 
-The project is production-ready with a Dockerfile.
+4. Configuration on Railway:
+   - Ensure the DATABASE_URL variable is correctly linked from your PostgreSQL service.
+   - Add all remaining variables from the Configuration section to the bot service.
+   - The bot will automatically handle the postgresql:// to postgres:// scheme conversion required by Tortoise ORM.
 
-### Build and Run locally:
-```bash
-docker build -t jan-diddy .
-docker run --env-file .env jan-diddy
-```
+## Database Migrations
 
-## Production Features:
-- Automated Migrations: Runs aerich upgrade automatically on startup.
-- Graceful Shutdown: Ensures DB and HTTP connections close cleanly.
-- Global Error Handling: Reports critical errors to the admin group.
-- Timezone Support: Configurable via TIMEZONE env variable.
+Database schema changes are managed via Aerich.
+
+- Initializing a new database:
+  poetry run aerich init-db
+
+- Creating a new migration after model changes:
+  poetry run aerich migrate
+
+- Applying migrations:
+  poetry run aerich upgrade
+
+Note: On Railway and within Docker Compose, migrations are applied automatically during the container startup process.
+
+## Moderation Policy
+
+The bot implements a strict content policy for designated users. Messages containing prohibited substrings (including variations using leetspeak or homoglyphs) are automatically deleted without further notification to maintain group decorum.

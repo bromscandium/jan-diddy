@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,17 +15,14 @@ class Settings(BaseSettings):
     SEMESTER_START: date
     CHAT_LINK: str
     TIMEZONE: str = "Europe/London"
-    BANNED_BY_ID: list[int]
+    BANNED_BY_ID: list[int] = []
 
-    USER: str
-    PASSWORD: str
-    HOST: str
-    PORT: int
-    DB: str
+    DATABASE_URL: str
 
     @property
     def url(self) -> str:
-        return f"postgres://{self.USER}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{self.DB}"
+        # Tortoise requires postgres:// scheme
+        return self.DATABASE_URL.replace("postgresql://", "postgres://")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_nested_delimiter="__")
 
