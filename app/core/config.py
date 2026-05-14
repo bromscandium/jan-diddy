@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     CHAT_ID: int
     ADMIN_CHAT_ID: int
     ADMIN_IDS: list[int]
-    GRANT_ADMIN_IDS: list[int]
     REACTIONS: list[str]
     SEMESTER_START: date
     CHAT_LINK: str
@@ -21,7 +20,6 @@ class Settings(BaseSettings):
 
     @property
     def url(self) -> str:
-        # Tortoise requires postgres:// scheme
         return self.DATABASE_URL.replace("postgresql://", "postgres://")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_nested_delimiter="__")

@@ -4,10 +4,10 @@ from telegram import Update
 from telegram.ext import CallbackContext
 
 from app.core.config import settings
-from app.utils.decorators import usage_limit
+from app.utils.decorators import group_limit
 
 
-@usage_limit
+@group_limit
 async def rules(update: Update, context: CallbackContext) -> None:
     if not update.message:
         return
@@ -16,7 +16,7 @@ async def rules(update: Update, context: CallbackContext) -> None:
     )
 
 
-@usage_limit
+@group_limit
 async def moodle(update: Update, context: CallbackContext) -> None:
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
@@ -26,7 +26,7 @@ async def moodle(update: Update, context: CallbackContext) -> None:
     )
 
 
-@usage_limit
+@group_limit
 async def links(update: Update, context: CallbackContext) -> None:
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
@@ -36,14 +36,14 @@ async def links(update: Update, context: CallbackContext) -> None:
     )
 
 
-@usage_limit
+@group_limit
 async def scores(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text(
         'Čítali ste kanál <a href="https://t.me/c/2307996875/4/378330">ASAP</a>?', parse_mode="HTML"
     )
 
 
-@usage_limit
+@group_limit
 async def plan(update: Update, context: CallbackContext) -> None:
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
@@ -53,7 +53,7 @@ async def plan(update: Update, context: CallbackContext) -> None:
     )
 
 
-@usage_limit
+@group_limit
 async def maptuke(update: Update, context: CallbackContext) -> None:
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
@@ -63,7 +63,7 @@ async def maptuke(update: Update, context: CallbackContext) -> None:
     )
 
 
-@usage_limit
+@group_limit
 async def map5p(update: Update, context: CallbackContext) -> None:
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
@@ -73,7 +73,7 @@ async def map5p(update: Update, context: CallbackContext) -> None:
     )
 
 
-@usage_limit
+@group_limit
 async def studijne(update: Update, context: CallbackContext) -> None:
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
@@ -83,7 +83,7 @@ async def studijne(update: Update, context: CallbackContext) -> None:
     )
 
 
-@usage_limit
+@group_limit
 async def schedule(update: Update, context: CallbackContext) -> None:
     await context.bot.forward_message(
         chat_id=update.effective_chat.id,
@@ -93,13 +93,13 @@ async def schedule(update: Update, context: CallbackContext) -> None:
     )
 
 
-@usage_limit
+@group_limit
 async def invite(update: Update, context: CallbackContext) -> None:
     if update.message:
         await update.message.reply_text(settings.CHAT_LINK)
 
 
-@usage_limit
+@group_limit
 async def week(update: Update, context: CallbackContext) -> None:
     now = datetime.now().date()
     if now < settings.SEMESTER_START:

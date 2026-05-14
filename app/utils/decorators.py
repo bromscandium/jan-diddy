@@ -11,14 +11,29 @@ _USER_LAST_CALLED = {}
 _COMMAND_USAGE = {}
 
 
-def admin_only(func):
+def admin_limit(func):
     @functools.wraps(func)
     async def wrapper(update: Update, context: CallbackContext, *args, **kwargs):
-        if update.effective_user.id not in settings.ADMIN_IDS:
+        if not update.message or not update.effective_user:
             return
+
+        member = await update.effective_chat.get_member(update.effective_user.id)
+        if member.status not in ["administrator", "creator"] or not member.can_restrict_members:
+            await update.message.reply_text("Ledači ako ty nemôžu používať tento príkaz.")
+
+        if not update.message.reply_to_message:
+            await update.message.reply_text("Vyskytla sa chyba pri šukaní ledača.")
+            return
+
+        target_user = update.message.reply_to_message.from_user
+        if target_user and target_user.id in settings.ADMIN_IDS:
+            await update.message.reply_text(f"{target_user.full_name} je hlavný administrátor.")
+            return
+
         return await func(update, context, *args, **kwargs)
 
     return wrapper
+
 
 
 def personal_limit(seconds: int):
@@ -38,7 +53,7 @@ def personal_limit(seconds: int):
     return decorator
 
 
-def usage_limit(func):
+def group_limit(func):
     @functools.wraps(func)
     async def wrapper(update: Update, context: CallbackContext, *args, **kwargs):
         user_id = update.effective_user.id
@@ -56,16 +71,6 @@ def usage_limit(func):
     return wrapper
 
 
-async def _reset_usage(context: CallbackContext):
-    user_id, cmd = context.job.data
-    if user_id in _COMMAND_USAGE and cmd in _COMMAND_USAGE[user_id]:
-        _COMMAND_USAGE[user_id][cmd] -= 1
-        if _COMMAND_USAGE[user_id][cmd] <= 0:
-            del _COMMAND_USAGE[user_id][cmd]
-        if not _COMMAND_USAGE[user_id]:
-            del _COMMAND_USAGE[user_id]
-
-
 def general_chat_only(func):
     @functools.wraps(func)
     async def wrapper(update: Update, context: CallbackContext, *args, **kwargs):
@@ -74,3 +79,13 @@ def general_chat_only(func):
         return await func(update, context, *args, **kwargs)
 
     return wrapper
+
+
+async def _reset_usage(context: CallbackContext):
+    user_id, cmd = context.job.data
+    if user_id in _COMMAND_USAGE and cmd in _COMMAND_USAGE[user_id]:
+        _COMMAND_USAGE[user_id][cmd] -= 1
+        if _COMMAND_USAGE[user_id][cmd] <= 0:
+            del _COMMAND_USAGE[user_id][cmd]
+        if not _COMMAND_USAGE[user_id]:
+            del _COMMAND_USAGE[user_id]

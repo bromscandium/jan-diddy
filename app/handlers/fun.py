@@ -8,7 +8,7 @@ from telegram.ext import CallbackContext
 from app.core.config import settings
 from app.core.http import HttpClient
 from app.services import jokes, predictions
-from app.utils.decorators import general_chat_only, personal_limit
+from app.utils.decorators import general_chat_limit, personal_limit
 
 
 def is_bro_detected(text: str) -> bool:
@@ -17,8 +17,8 @@ def is_bro_detected(text: str) -> bool:
     n = text.lower()
     n = n.replace("0", "o").replace("6", "b").replace("p", "r")
     trans = {"b": "б", "r": "р", "o": "о"}
-    for l, c in trans.items():
-        n = n.replace(l, c)
+    for char, replacement in trans.items():
+        n = n.replace(char, replacement)
     n = re.sub(r"[^а-яё]", "", n)
     return "бро" in n
 
@@ -31,7 +31,8 @@ async def bro_monitor(update: Update, context: CallbackContext):
     if is_bro_detected(update.message.text):
         await update.message.delete()
 
-@general_chat_only
+
+@general_chat_limit
 @personal_limit(61)
 async def predict(update: Update, context: CallbackContext):
     if not update.message:
@@ -42,7 +43,7 @@ async def predict(update: Update, context: CallbackContext):
     )
 
 
-@general_chat_only
+@general_chat_limit
 @personal_limit(121)
 async def joke(update: Update, context: CallbackContext):
     if not update.message:
@@ -52,7 +53,7 @@ async def joke(update: Update, context: CallbackContext):
     )
 
 
-@general_chat_only
+@general_chat_limit
 @personal_limit(61)
 async def chance(update: Update, context):
     if not update.message:
@@ -67,7 +68,7 @@ async def chance(update: Update, context):
         await update.message.reply_text(f"Šanca byť hetero: {num}%")
 
 
-@general_chat_only
+@general_chat_limit
 @personal_limit(121)
 async def weather(update: Update, context: CallbackContext):
     if not update.message:
