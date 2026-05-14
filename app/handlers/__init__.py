@@ -10,7 +10,6 @@ admin_commands = {
     "warn": admin.warn,
     "unwarn": admin.unwarn,
     "listwarn": admin.listwarn,
-    "resetwarn": admin.reset_warn,
 }
 
 info_commands = {
@@ -24,7 +23,7 @@ info_commands = {
     "studijne": info.studijne,
     "schedule": info.schedule,
     "invite": info.invite,
-    "week": info.week
+    "week": info.week,
 }
 
 fun_commands = {
@@ -40,6 +39,7 @@ chat_commands = {
 
 all_commands = {**admin_commands, **info_commands, **fun_commands, **chat_commands}
 
+
 def setup_handlers(app: Application) -> None:
     for command, handler in all_commands.items():
         app.add_handler(CommandHandler(command, handler))
@@ -48,10 +48,12 @@ def setup_handlers(app: Application) -> None:
     app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.COMMAND, chat.start_message))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, events.welcome))
     app.add_handler(
-        MessageHandler((filters.ChatType.GROUP | filters.ChatType.SUPERGROUP) & ~filters.COMMAND, events.reaction))
+        MessageHandler((filters.ChatType.GROUP | filters.ChatType.SUPERGROUP) & ~filters.COMMAND, events.reaction)
+    )
+
 
 __all__ = [
-    'setup_handlers',
-    'events',
-    'chat',
+    "setup_handlers",
+    "events",
+    "chat",
 ]

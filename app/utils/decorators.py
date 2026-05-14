@@ -71,7 +71,7 @@ def group_limit(func):
     return wrapper
 
 
-def general_chat_only(func):
+def general_chat_limit(func):
     @functools.wraps(func)
     async def wrapper(update: Update, context: CallbackContext, *args, **kwargs):
         if update.effective_message.message_thread_id is not None:
