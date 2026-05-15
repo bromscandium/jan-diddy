@@ -391,6 +391,18 @@ files = [
 markers = {main = "platform_system == \"Windows\" or sys_platform == \"win32\"", dev = "sys_platform == \"win32\""}
 
 [[package]]
+name = "confusables"
+version = "1.2.0"
+description = "A python package providing functionality for matching words that can be confused for eachother, but contain different characters"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "confusables-1.2.0-py3-none-any.whl", hash = "sha256:0c3e4a8ef8a6179f222e8cb6ea65ac5a71fa5c70d2de21950d14e99f933ecf52"},
+    {file = "confusables-1.2.0.tar.gz", hash = "sha256:429caad05333832e1edabb80815704cd26530514369430f913002b2ba548c38e"},
+]
+
+[[package]]
 name = "dictdiffer"
 version = "0.9.0"
 description = "Dictdiffer is a library that helps you to diff and patch dictionaries."
@@ -1598,4 +1610,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.13"
-content-hash = "eaca53c7d0314e55b4ef5e189f1291d94280a7c87bb53d2fda656c6cf96a5e54"
+content-hash = "6bc821543df5f8fb7924e40c1f3b6929fcc9e15cd9dd71a8f13638c53237fd32"

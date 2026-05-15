@@ -1,7 +1,9 @@
 import random
 import re
+import unicodedata
 from datetime import datetime, timedelta
 
+from confusables import normalize as confusable_normalize
 from telegram import Update
 from telegram.ext import CallbackContext
 
@@ -10,13 +12,56 @@ from app.core.http import HttpClient
 from app.services import jokes, predictions
 from app.utils.decorators import general_chat_limit, personal_limit
 
+HOMOGLYPHS = {
+    "б": "b",
+    "Б": "b",
+    "В": "b",
+    "в": "b",
+    "ß": "b",
+    "6": "b",
+    "р": "r",
+    "Р": "r",
+    "ρ": "r",
+    "Ρ": "r",
+    "о": "o",
+    "О": "o",
+    "0": "o",
+    "ο": "o",
+    "Ο": "o",
+    "ø": "o",
+    "Ø": "o",
+    "@": "o",
+    "Q": "o",
+}
+
+_WORD_CHARS = re.compile(r"[^\W]", re.UNICODE)
+
+
+def _normalize(text: str) -> str:
+    text = unicodedata.normalize("NFKC", text)
+    result = []
+    for ch in text:
+        mapped = HOMOGLYPHS.get(ch)
+        if mapped:
+            result.append(mapped)
+        elif ch.isalpha() and ord(ch) > 127:
+            result.append("x")
+        else:
+            result.append(ch)
+    return "".join(result).lower()
+
 
 def is_bro_detected(text: str) -> bool:
     if not text:
         return False
-    # Standardized "bro" detection with word boundaries and homoglyphs
-    pattern = r"(?i)(?<![а-яёa-z0-9])[бb6]+[\W_]*[рrp]+[\W_]*[оo0]+(?![а-яёa-z0-9])"
-    return bool(re.search(pattern, text))
+
+    pattern = r"(?<![a-z0-9])b+[\W_]*r+[\W_]*o+(?![a-z0-9])"
+
+    variants = confusable_normalize(text) or []
+    for v in [text] + variants:
+        if re.search(pattern, _normalize(v)):
+            return True
+    return False
 
 
 async def bro_monitor(update: Update, context: CallbackContext):
