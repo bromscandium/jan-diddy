@@ -22,14 +22,20 @@ async def on_shutdown(app) -> None:
 
 
 async def error_handler(update: object, context: CallbackContext) -> None:
-    logger.exception("Exception while handling an update:")
+    error = context.error
+    logger.error(f"Exception while handling an update: {error}")
+    
+    if "Conflict: terminated by other getUpdates request" in str(error):
+        logger.warning("Bot instance conflict detected. Exiting to allow orchestrator restart.")
+        return
+
     try:
         await context.bot.send_message(
             chat_id=settings.ADMIN_CHAT_ID,
-            text=f"Bot error: {context.error}",
+            text=f"Bot error: {error}",
         )
-    except Exception:
-        logger.error("Failed to send error report to admin group")
+    except Exception as e:
+        logger.error(f"Failed to send error report: {e}")
 
 
 def main() -> None:
