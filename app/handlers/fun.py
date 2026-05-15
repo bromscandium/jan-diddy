@@ -14,13 +14,9 @@ from app.utils.decorators import general_chat_limit, personal_limit
 def is_bro_detected(text: str) -> bool:
     if not text:
         return False
-    n = text.lower()
-    n = n.replace("0", "o").replace("6", "b").replace("p", "r")
-    trans = {"b": "б", "r": "р", "o": "о"}
-    for char, replacement in trans.items():
-        n = n.replace(char, replacement)
-    n = re.sub(r"[^а-яё]", "", n)
-    return "бро" in n
+    # Standardized "bro" detection with word boundaries and homoglyphs
+    pattern = r"(?i)(?<![а-яёa-z0-9])[бb6]+[\W_]*[рrp]+[\W_]*[оo0]+(?![а-яёa-z0-9])"
+    return bool(re.search(pattern, text))
 
 
 async def bro_monitor(update: Update, context: CallbackContext):
