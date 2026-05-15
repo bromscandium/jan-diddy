@@ -23,6 +23,16 @@ jobs:
 
       - name: Run Tests (Pytest)
         run: poetry run pytest
+        env:
+          BOT_TOKEN: "123456:ABC-DEF"
+          WEATHER_API_KEY: "dummy"
+          CHAT_ID: "0"
+          ADMIN_CHAT_ID: "0"
+          ADMIN_IDS: "[0]"
+          REACTIONS: "[]"
+          SEMESTER_START: "2026-01-01"
+          CHAT_LINK: "https://t.me/dummy"
+          DATABASE_URL: "postgresql://u:p@localhost:5432/db"
 
       - name: Deploy to Railway
         if: success()
