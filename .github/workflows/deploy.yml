@@ -1,0 +1,33 @@
+name: CI/CD Deploy
+on:
+  push:
+    branches: [ master, main ]
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'poetry'
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run Tests (Pytest)
+        run: poetry run pytest
+
+      - name: Deploy to Railway
+        if: success()
+        run: |
+          npm i -g @railway/cli
+          railway up --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
