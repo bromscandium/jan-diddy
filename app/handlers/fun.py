@@ -154,27 +154,21 @@ def is_bro_detected(text: str) -> bool:
     if not text:
         return False
 
-    def check_logic(n: str) -> bool:
-        for raw_token in re.split(r"[\s,!?;:]+", n):
-            if not raw_token:
-                continue
-            pure = "".join(c for c in raw_token if c.isalpha())
-            if re.fullmatch(r"b+r+o+", pure):
-                return True
-        if re.search(r"(?<![^\W_])b+[\W_]*r+[\W_]*o+(?![^\W_])", n):
+    n = _normalize(text)
+    pattern = r"b+[\W_]*r+[\W_]*o+"
+    for match in re.finditer(pattern, n):
+        start, end = match.span()
+        # Expand to whitespace boundaries to catch the full word/block
+        while start > 0 and not n[start - 1].isspace():
+            start -= 1
+        while end < len(n) and not n[end].isspace():
+            end += 1
+
+        full_block = n[start:end]
+        pure = "".join(c for c in full_block if c.isalpha())
+        if re.fullmatch(r"b+r+o+", pure):
             return True
-        return False
-
-    if check_logic(_normalize(text)):
-        return True
-
-    try:
-        variants = confusable_normalize(text) or []
-        for v in variants:
-            if v != text and "'" not in v and check_logic(_normalize(v)):
-                return True
-    except Exception:
-        pass
+            
     return False
 
 

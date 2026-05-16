@@ -109,6 +109,7 @@ from app.handlers.fun import is_bro_detected
         ("embryo", False),
         ("об'єкт", False),
         ("роз'єм", False),
+        ("евро", False),
     ],
 )
 def test_is_bro_detected(text, expected):
