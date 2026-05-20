@@ -1,6 +1,7 @@
 import functools
 import time
 
+from loguru import logger
 from telegram import Update
 from telegram.ext import CallbackContext
 
@@ -20,6 +21,7 @@ def admin_limit(func):
         member = await update.effective_chat.get_member(update.effective_user.id)
         if member.status not in ["administrator", "creator"] or not member.can_restrict_members:
             await update.message.reply_text("Ledači ako ty nemôžu používať tento príkaz.")
+            return
 
         if not update.message.reply_to_message:
             await update.message.reply_text("Vyskytla sa chyba pri šukaní ledača.")
@@ -33,7 +35,6 @@ def admin_limit(func):
         return await func(update, context, *args, **kwargs)
 
     return wrapper
-
 
 
 def personal_limit(seconds: int):
