@@ -1,3 +1,5 @@
+import httpx
+from telegram.error import NetworkError
 from telegram.ext import ApplicationBuilder, CallbackContext
 
 from app.core.config import settings
@@ -29,6 +31,13 @@ async def error_handler(update: object, context: CallbackContext) -> None:
         logger.warning("Bot instance conflict detected. Exiting to allow orchestrator restart.")
         return
 
+    if (
+        isinstance(error, (NetworkError, httpx.TransportError))
+        or "Bad Gateway" in str(error)
+    ):
+        logger.warning(f"Transient network error, skipping admin report: {error!r}")
+        return
+
     try:
         await context.bot.send_message(
             chat_id=settings.ADMIN_CHAT_ID,
@@ -50,8 +59,19 @@ def main() -> None:
     setup_handlers(bot)
     bot.add_error_handler(error_handler)
 
-    logger.info("Starting Telegram Bot...")
-    bot.run_polling(drop_pending_updates=True)
+    if settings.webhook_url:
+        logger.info("Starting Telegram Bot (webhook)...")
+        bot.run_webhook(
+            listen="0.0.0.0",
+            port=settings.PORT,
+            url_path=settings.WEBHOOK_PATH,
+            webhook_url=f"{settings.webhook_url}/{settings.WEBHOOK_PATH}",
+            secret_token=settings.WEBHOOK_SECRET,
+            drop_pending_updates=True,
+        )
+    else:
+        logger.info("Starting Telegram Bot (polling fallback)...")
+        bot.run_polling(drop_pending_updates=True)
 
 
 if __name__ == "__main__":
