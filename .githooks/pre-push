@@ -1,0 +1,21 @@
+#!/bin/sh
+# Pre-push hook: run linter and tests before allowing a push.
+# Enable with: git config core.hooksPath .githooks
+set -e
+
+echo "==> Ruff lint"
+poetry run ruff check .
+
+echo "==> Pytest"
+BOT_TOKEN="123456:ABC-DEF" \
+WEATHER_API_KEY="dummy" \
+CHAT_ID="0" \
+ADMIN_CHAT_ID="0" \
+ADMIN_IDS="[0]" \
+REACTIONS="[]" \
+SEMESTER_START="2026-01-01" \
+CHAT_LINK="https://t.me/dummy" \
+DATABASE_URL="postgresql://u:p@localhost:5432/db" \
+poetry run pytest
+
+echo "==> All checks passed, pushing."

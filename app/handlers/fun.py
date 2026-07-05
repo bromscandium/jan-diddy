@@ -3,7 +3,6 @@ import re
 import unicodedata
 from datetime import datetime, timedelta
 
-from confusables import normalize as confusable_normalize
 from telegram import Update
 from telegram.ext import CallbackContext
 

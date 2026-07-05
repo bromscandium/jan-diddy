@@ -1,7 +1,6 @@
 import functools
 import time
 
-from loguru import logger
 from telegram import Update
 from telegram.ext import CallbackContext
 
