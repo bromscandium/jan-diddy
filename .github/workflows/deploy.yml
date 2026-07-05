@@ -66,6 +66,7 @@ jobs:
       - name: Deploy to Railway
         run: |
           bun add -g @railway/cli
-          railway up --detach
+          railway up --detach --service "$RAILWAY_SERVICE"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE: jan-diddy
