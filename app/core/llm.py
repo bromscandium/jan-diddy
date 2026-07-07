@@ -18,37 +18,39 @@ llm_settings = LLMSettings()
 
 
 @dataclass(frozen=True)
-class TriggerConfig:
-    active_hours: tuple[int, int]
+class TrackConfig:
     min_messages: int
     min_minutes: int
     probability: float
-    reply_probability: float
     cooldown_minutes: int
+
+
+@dataclass(frozen=True)
+class TriggerConfig:
+    active_hours: tuple[int, int]
+    reply_probability: float
     prewarm_messages: int
     prewarm_minutes: int
+    spontaneous: TrackConfig
+    addressed: TrackConfig
 
 
 PROD = TriggerConfig(
     active_hours=(8, 24),
-    min_messages=20,
-    min_minutes=30,
-    probability=0.15,
     reply_probability=0.6,
-    cooldown_minutes=20,
     prewarm_messages=15,
     prewarm_minutes=25,
+    spontaneous=TrackConfig(min_messages=20, min_minutes=30, probability=0.15, cooldown_minutes=20),
+    addressed=TrackConfig(min_messages=2, min_minutes=0, probability=0.7, cooldown_minutes=3),
 )
 
 DEBUG = TriggerConfig(
     active_hours=(0, 24),
-    min_messages=2,
-    min_minutes=0,
-    probability=1.0,
     reply_probability=0.5,
-    cooldown_minutes=0,
     prewarm_messages=1,
     prewarm_minutes=0,
+    spontaneous=TrackConfig(min_messages=2, min_minutes=0, probability=1.0, cooldown_minutes=0),
+    addressed=TrackConfig(min_messages=1, min_minutes=0, probability=1.0, cooldown_minutes=0),
 )
 
 

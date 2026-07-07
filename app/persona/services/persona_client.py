@@ -18,9 +18,21 @@ async def prewarm() -> None:
         logger.warning(f"prewarm failed: {exc}")
 
 
-async def generate(messages: list[dict], chat_id: int, thread_id: int | None) -> str | None:
+async def generate(
+    messages: list[dict],
+    chat_id: int,
+    thread_id: int | None,
+    mode: str = "spontaneous",
+    target: dict | None = None,
+) -> str | None:
     url = f"{llm_settings.PERSONA_ENGINE_URL}/v1/generate-reply"
-    payload = {"messages": messages, "chat_id": chat_id, "thread_id": thread_id}
+    payload = {
+        "messages": messages,
+        "chat_id": chat_id,
+        "thread_id": thread_id,
+        "mode": mode,
+        "target": target,
+    }
     for attempt in range(2):
         try:
             async with httpx.AsyncClient(timeout=llm_settings.PERSONA_ENGINE_TIMEOUT) as client:

@@ -3,8 +3,8 @@ import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app.core.llm import TriggerConfig
 from app.core.bot import bot_settings
+from app.core.llm import TrackConfig, TriggerConfig
 
 
 def _local_hour() -> int:
@@ -28,14 +28,14 @@ def should_prewarm(state: dict, cfg: TriggerConfig) -> bool:
     )
 
 
-def should_reply(state: dict, cfg: TriggerConfig) -> bool:
+def should_reply(track: TrackConfig, state: dict, cfg: TriggerConfig, bias: float = 1.0) -> bool:
     now = time.time()
     if not _in_hours(cfg):
         return False
     if now < state["cooldown_until"]:
         return False
-    if state["count"] < cfg.min_messages:
+    if state["count"] < track.min_messages:
         return False
-    if now - state["last_response_ts"] < cfg.min_minutes * 60:
+    if now - state["last_response_ts"] < track.min_minutes * 60:
         return False
-    return random.random() < cfg.probability
+    return random.random() < min(1.0, track.probability * bias)

@@ -3,6 +3,8 @@ import json
 from app.core.llm import llm_settings
 from app.core.redis import redis
 
+TRACKS = ("spont", "addr")
+
 
 def _prefix(chat_id: int, thread_id: int | None) -> str:
     return f"jd:{chat_id}:{thread_id if thread_id is not None else 'none'}"
@@ -11,6 +13,7 @@ def _prefix(chat_id: int, thread_id: int | None) -> str:
 async def record_incoming(
     chat_id: int,
     thread_id: int | None,
+    user_id: int | None,
     username: str,
     text: str,
     message_id: int,
@@ -18,12 +21,15 @@ async def record_incoming(
 ) -> None:
     r = redis()
     p = _prefix(chat_id, thread_id)
-    item = json.dumps({"username": username, "text": text, "message_id": message_id, "ts": ts})
+    item = json.dumps(
+        {"user_id": user_id, "username": username, "text": text, "message_id": message_id, "ts": ts}
+    )
     pipe = r.pipeline()
     pipe.lpush(f"{p}:buf", item)
     pipe.ltrim(f"{p}:buf", 0, llm_settings.BUFFER_SIZE - 1)
-    pipe.hincrby(f"{p}:state", "count", 1)
-    pipe.hset(f"{p}:state", "last_activity_ts", ts)
+    for track in TRACKS:
+        pipe.hincrby(f"{p}:{track}", "count", 1)
+    pipe.hset(f"{p}:spont", "last_activity_ts", ts)
     await pipe.execute()
 
 
@@ -35,9 +41,8 @@ async def get_context(chat_id: int, thread_id: int | None) -> list[dict]:
     return items
 
 
-async def get_state(chat_id: int, thread_id: int | None) -> dict:
-    r = redis()
-    h = await r.hgetall(f"{_prefix(chat_id, thread_id)}:state")
+async def get_track(chat_id: int, thread_id: int | None, track: str) -> dict:
+    h = await redis().hgetall(f"{_prefix(chat_id, thread_id)}:{track}")
     return {
         "count": int(h.get("count", 0)),
         "last_response_ts": float(h.get("last_response_ts", 0)),
@@ -47,14 +52,14 @@ async def get_state(chat_id: int, thread_id: int | None) -> dict:
 
 
 async def mark_prewarmed(chat_id: int, thread_id: int | None) -> None:
-    r = redis()
-    await r.hset(f"{_prefix(chat_id, thread_id)}:state", "prewarmed", "1")
+    await redis().hset(f"{_prefix(chat_id, thread_id)}:spont", "prewarmed", "1")
 
 
-async def register_reply(chat_id: int, thread_id: int | None, now: float, cooldown_minutes: int) -> None:
-    r = redis()
-    await r.hset(
-        f"{_prefix(chat_id, thread_id)}:state",
+async def register_reply(
+    chat_id: int, thread_id: int | None, track: str, now: float, cooldown_minutes: int
+) -> None:
+    await redis().hset(
+        f"{_prefix(chat_id, thread_id)}:{track}",
         mapping={
             "count": 0,
             "last_response_ts": now,

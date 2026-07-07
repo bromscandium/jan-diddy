@@ -49,3 +49,16 @@ class SuccessfulDialogs(LLMModel):
     class Meta(LLMModel.Meta):
         abstract = False
         table = "successful_dialogs"
+
+
+class UserProfiles(LLMModel):
+    user_id = fields.BigIntField(unique=True, db_index=True)
+    username = fields.TextField(null=True)
+    engagement_score = fields.IntField(default=0)
+    replies_to_them = fields.IntField(default=0)
+    successes = fields.IntField(default=0)
+    last_seen = fields.DatetimeField(null=True)
+
+    class Meta(LLMModel.Meta):
+        abstract = False
+        table = "user_profiles"
