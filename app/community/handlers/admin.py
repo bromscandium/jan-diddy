@@ -3,7 +3,7 @@ from datetime import timedelta
 from telegram import ChatPermissions, Update
 from telegram.ext import CallbackContext
 
-from app.services import warnings
+from app.community.services import warnings
 from app.utils.decorators import admin_limit
 
 

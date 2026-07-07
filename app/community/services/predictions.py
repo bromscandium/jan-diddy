@@ -1,6 +1,6 @@
 import random
 
-from app.models.predictions import Predictions
+from app.community.models import Predictions
 
 
 async def add_prediction(prediction: str) -> Predictions:

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jan-diddy"
-version = "5.3.2"
+version = "6.0.0"
 
 description = "Telegram bot with Tortoise ORM"
 authors = ["bromscandium"]
@@ -21,9 +21,10 @@ asyncpg = "^0.31.0"
 pydantic-settings = "^2.12"
 loguru = "^0.7.3"
 confusables = "^1.2.0"
+redis = "^5.2.0"
 
 [tool.aerich]
-tortoise_orm = "app.db.postgres.TORTOISE_ORM"
+tortoise_orm = "app.core.postgres.TORTOISE_ORM"
 location = "./migrations"
 src_folder = "./."
 

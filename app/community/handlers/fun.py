@@ -1,0 +1,234 @@
+import functools
+import random
+import re
+import unicodedata
+from collections.abc import Awaitable, Callable
+
+from telegram import Update
+from telegram.ext import CallbackContext
+
+from app.core.bot import bot_settings
+from app.community.services import jokes, predictions
+from app.community.services.weather import fetch_weather
+from app.utils.decorators import general_chat_limit, personal_limit
+
+Handler = Callable[[Update, CallbackContext], Awaitable[None]]
+
+
+def random_reply(template: str, fetch: Callable[[], Awaitable[str]]) -> Callable[[Handler], Handler]:
+    def decorator(func: Handler) -> Handler:
+        @functools.wraps(func)
+        async def wrapper(update: Update, context: CallbackContext) -> None:
+            if not update.message:
+                return
+            await update.message.reply_text(
+                template.format(name=update.effective_user.full_name, text=await fetch())
+            )
+
+        return wrapper
+
+    return decorator
+
+# Evian, big brother is watching you
+
+MULTI_CHAR_HOMOGLYPHS = {
+    "()": "o",
+    "[]": "o",
+    "{}": "o",
+    "<>": "o",
+    "( )": "o",
+    "[ ]": "o",
+    "{ }": "o",
+    "{)": "o",
+    "(}": "o",
+    "[)": "o",
+    "(]": "o",
+    "[ )": "o",
+    "( ]": "o",
+    "(.)": "o",
+    "[.]": "o",
+    "{.}": "o",
+    "|3": "b",
+    "13": "b",
+    "l3": "b",
+    "I3": "b",
+    "/3": "b",
+    "\\3": "b",
+    "|)": "b",
+    "|>": "b",
+    "|]": "b",
+    "|8": "b",
+    "|S": "b",
+    "|2": "r",
+    "l2": "r",
+}
+
+HOMOGLYPHS = {
+    "б": "b",
+    "Б": "b",
+    "В": "b",
+    "в": "b",
+    "Ь": "b",
+    "ь": "b",
+    "ъ": "b",
+    "Ъ": "b",
+    "ѣ": "b",
+    "Ѣ": "b",
+    "ћ": "b",
+    "ђ": "b",
+    "v": "b",
+    "V": "b",
+    "w": "b",
+    "W": "b",
+    "þ": "b",
+    "Þ": "b",
+    "ß": "b",
+    "6": "b",
+    "8": "b",
+    "🇧": "b",
+    "🅱": "b",
+    "🐝": "b",
+    "𝕓": "b",
+    "𝓫": "b",
+    "𝔟": "b",
+    "p": "r",
+    "P": "r",
+    "р": "r",
+    "Р": "r",
+    "г": "r",
+    "Г": "r",
+    "я": "r",
+    "Я": "r",
+    "२": "r",
+    "ρ": "r",
+    "Ρ": "r",
+    "ɹ": "r",
+    "®": "r",
+    "🇷": "r",
+    "🅿": "r",
+    "𝕣": "r",
+    "𝓻": "r",
+    "𝔯": "r",
+    "о": "o",
+    "О": "o",
+    "0": "o",
+    "ο": "o",
+    "Ο": "o",
+    "ø": "o",
+    "Ø": "o",
+    "θ": "o",
+    "Θ": "o",
+    "ѻ": "o",
+    "ѳ": "o",
+    "Ѳ": "o",
+    "u": "o",
+    "U": "o",
+    "@": "o",
+    "Q": "o",
+    "⭕": "o",
+    "🇴": "o",
+    "🅾": "o",
+    "🔴": "o",
+    "🔵": "o",
+    "⚪": "o",
+    "⚫": "o",
+    "🟡": "o",
+    "🟢": "o",
+    "🟣": "o",
+    "🟤": "o",
+    "🔘": "o",
+    "🌕": "o",
+    "⚽": "o",
+    "🍊": "o",
+    "𝕠": "o",
+    "𝓸": "o",
+    "𝔬": "o",
+    "Ⓜ": "m",
+}
+
+
+def _normalize(text: str) -> str:
+    if "\u202e" in text:
+        parts = text.split("\u202e")
+        text = parts[0] + "".join(p[::-1] for p in parts[1:])
+
+    text = re.sub(r"[\u200b-\u200f\u202a-\u202d\u2060-\u206f\ufeff\u00ad]", "", text)
+    text = unicodedata.normalize("NFD", text)
+    text = "".join(c for c in text if unicodedata.category(c) != "Mn")
+    text = unicodedata.normalize("NFKC", text)
+
+    for multi, replacement in MULTI_CHAR_HOMOGLYPHS.items():
+        text = text.replace(multi, replacement)
+
+    result = []
+    for ch in text:
+        mapped = HOMOGLYPHS.get(ch)
+        result.append(mapped if mapped else ch)
+    return "".join(result).lower()
+
+
+def is_bro_detected(text: str) -> bool:
+    if not text:
+        return False
+
+    n = _normalize(text)
+    pattern = r"b+[\W_]*r+[\W_]*o+"
+    for match in re.finditer(pattern, n):
+        start, end = match.span()
+        # Expand to whitespace boundaries to catch the full word/block
+        while start > 0 and not n[start - 1].isspace():
+            start -= 1
+        while end < len(n) and not n[end].isspace():
+            end += 1
+
+        full_block = n[start:end]
+        pure = "".join(c for c in full_block if c.isalpha())
+        if re.fullmatch(r"b+r+o+", pure):
+            return True
+            
+    return False
+
+
+async def bro_monitor(update: Update, context: CallbackContext):
+    if not update.message or not update.message.text:
+        return
+    if update.effective_user.id not in bot_settings.BANNED_BY_ID:
+        return
+    if is_bro_detected(update.message.text):
+        await update.message.delete()
+
+
+@general_chat_limit
+@personal_limit(61)
+@random_reply("Dnes máš takéto predpovedanie, {name}:\n{text}", predictions.read_random_prediction)
+async def predict(update: Update, context: CallbackContext) -> None: ...
+
+
+@general_chat_limit
+@personal_limit(121)
+@random_reply("Počúvaj tento žart, {name}:\n{text}", jokes.read_random_joke)
+async def joke(update: Update, context: CallbackContext) -> None: ...
+
+
+@general_chat_limit
+@personal_limit(61)
+async def chance(update: Update, context):
+    if not update.message:
+        return
+    text = update.message.text or ""
+    parts = text.split(maxsplit=1)
+    query = parts[1].strip() if len(parts) > 1 else ""
+    num = random.randint(0, 100)
+    if query:
+        await update.message.reply_text(f"Šanca pre „{query}“: {num}%")
+    else:
+        await update.message.reply_text(f"Šanca byť hetero: {num}%")
+
+
+@general_chat_limit
+@personal_limit(121)
+async def weather(update: Update, context: CallbackContext) -> None:
+    if not update.message:
+        return
+    report = await fetch_weather()
+    await update.message.reply_text(report or "Nepodarilo sa načítať počasie. Skús neskôr.")

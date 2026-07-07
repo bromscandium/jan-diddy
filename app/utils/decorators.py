@@ -4,7 +4,7 @@ import time
 from telegram import Update
 from telegram.ext import CallbackContext
 
-from app.core.config import settings
+from app.core.bot import bot_settings
 
 # NOTE: These limits are stored in memory and will reset upon bot restart (e.g., Railway redeploy).
 _USER_LAST_CALLED = {}
@@ -27,7 +27,7 @@ def admin_limit(func):
             return
 
         target_user = update.message.reply_to_message.from_user
-        if target_user and target_user.id in settings.ADMIN_IDS:
+        if target_user and target_user.id in bot_settings.ADMIN_IDS:
             await update.message.reply_text(f"{target_user.full_name} je hlavný administrátor.")
             return
 

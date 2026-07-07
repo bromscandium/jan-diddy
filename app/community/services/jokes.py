@@ -1,6 +1,6 @@
 import random
 
-from app.models.jokes import Jokes
+from app.community.models import Jokes
 
 
 async def add_joke(joke: str) -> Jokes:

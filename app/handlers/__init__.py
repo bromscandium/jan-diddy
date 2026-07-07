@@ -1,6 +1,7 @@
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, MessageReactionHandler, filters
 
-from app.handlers import admin, chat, events, fun, info
+from app.community.handlers import admin, chat, events, fun, info
+from app.persona.handlers import listener, reactions
 
 admin_commands = {
     "mute": admin.mute,
@@ -50,6 +51,14 @@ def setup_handlers(app: Application) -> None:
     app.add_handler(
         MessageHandler((filters.ChatType.GROUP | filters.ChatType.SUPERGROUP) & ~filters.COMMAND, events.reaction)
     )
+    app.add_handler(
+        MessageHandler(
+            (filters.ChatType.GROUP | filters.ChatType.SUPERGROUP) & filters.TEXT & ~filters.COMMAND,
+            listener.listener,
+        ),
+        group=1,
+    )
+    app.add_handler(MessageReactionHandler(reactions.on_reaction), group=1)
 
 
 __all__ = [

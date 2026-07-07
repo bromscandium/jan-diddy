@@ -1,6 +1,6 @@
 import pytest
 
-from app.handlers.fun import is_bro_detected
+from app.community.handlers.fun import is_bro_detected
 
 
 @pytest.mark.parametrize(

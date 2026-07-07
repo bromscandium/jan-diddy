@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import pytest
 from polyfactory.factories.dataclass_factory import DataclassFactory
 
-from app.services import jokes, predictions, warnings
+from app.community.services import jokes, predictions, warnings
 
 
 @dataclass

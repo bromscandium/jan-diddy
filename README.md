@@ -1,81 +1,101 @@
 # Jan Diddy
 
-Asynchronous Telegram bot built with Python 3.14, python-telegram-bot, and Tortoise ORM. Designed for group management, information distribution, and automated moderation.
+Version 6.0.0
+
+Asynchronous Telegram bot built with Python 3.14, python-telegram-bot, and Tortoise ORM. It combines classic group management (moderation, info, fun commands) with an AI persona that passively listens to the chat and occasionally replies in character via a separate LLM engine.
+
+## Architecture
+
+The application is split into vertical slices by domain, mirroring the two database schemas.
+
+```
+app/
+├── main.py                 thin entrypoint — BotApplication().run()
+├── core/                   shared kernel
+│   ├── application.py      BotApplication: build, lifecycle, error handling, run
+│   ├── bot.py              BotSettings   (telegram, webhook, admin, timezone)
+│   ├── db.py               DBSettings    (DATABASE_URL, url)
+│   ├── llm.py              LLMSettings + TriggerConfig (persona engine + triggers)
+│   ├── postgres.py         Tortoise config + connect/close (migrations on startup)
+│   ├── redis.py            RedisSettings + Redis client
+│   ├── http.py             shared aiohttp session
+│   └── logger.py           loguru
+├── community/              classic bot (schema "bot")
+│   ├── models.py           BotModel base + Jokes, Predictions, Warnings
+│   ├── services/           jokes, predictions, warnings, weather
+│   └── handlers/           admin, chat, events, fun, info
+├── persona/                AI persona (schema "llm")
+│   ├── models.py           LLMModel base + Messages, BotReplies, SuccessfulDialogs
+│   ├── services/           state, triggers, persona_client, scoring, history
+│   └── handlers/           listener, reactions
+└── handlers/__init__.py    setup_handlers() — wires both slices
+```
+
+The persona engine (`../jan-diddy-llm`) is a separate service reached over HTTP; the
+bot never loads the model itself.
 
 ## Features
 
-- Administrative Tools: Full suite of moderation commands including ban, unban, mute, unmute, and a multi-level warning system with automated temporary restrictions.
-- Targeted Content Filter: Aggressive word filter using homoglyph normalization and noise removal, specifically targeting users listed in the banned registry.
-- Information Services: Automated distribution of academic schedules, rules, Moodle links, and semester progress tracking.
-- Entertainment Modules: Weather integration via OpenWeatherMap, random joke generation, and probability predictions.
-- Robust Architecture: Powered by Tortoise ORM with Aerich migrations, Pydantic Settings for configuration, and automated rate limiting.
+- Administrative Tools: ban, unban, mute, unmute, and a multi-level warning system with automated temporary restrictions.
+- Targeted Content Filter: homoglyph/leetspeak normalization filter for users in the banned registry.
+- Information Services: academic schedules, rules, Moodle links, semester progress.
+- Entertainment: OpenWeatherMap weather, random jokes, probability predictions.
+- AI Persona: passive listener that reconstructs recent chat context, probabilistically decides to reply, and generates an in-character reply via the LLM engine. Successful replies (reactions / laughter keywords) are recorded for future fine-tuning.
 
 ## Technical Stack
 
-- Language: Python 3.14
-- Dependency Management: Poetry 2.4.1
-- Database: PostgreSQL (Async via asyncpg)
-- ORM: Tortoise ORM
-- Deployment: Docker, Railway.com
+- Python 3.14, Poetry 2.4.1
+- PostgreSQL (async, asyncpg) via Tortoise ORM + Aerich migrations
+- Redis (hot state: message buffer, counters, scoring window)
+- Pydantic Settings, loguru, python-telegram-bot 22.5
+- Docker, Railway.com
 
 ## Configuration
 
-The application requires the following environment variables. These should be defined in a .env file for local development or within the Railway dashboard for production.
+Defined in `.env` locally (see `.env.sample`) or the Railway dashboard.
 
 - BOT_TOKEN: Telegram Bot API token.
 - WEATHER_API_KEY: OpenWeatherMap API key.
-- DATABASE_URL: Full PostgreSQL connection string (postgresql://user:pass@host:port/db).
-- CHAT_ID: Main group chat ID.
-- ADMIN_CHAT_ID: Group ID for error logs and bot notifications.
-- ADMIN_IDS: List of user IDs with full administrative access.
-- GRANT_ADMIN_IDS: List of user IDs with limited administrative permissions.
-- SEMESTER_START: Date in YYYY-MM-DD format.
-- TIMEZONE: Regional timezone (default: Europe/London).
-- BANNED_BY_ID: List of user IDs subject to the targeted word filter.
+- DATABASE_URL: PostgreSQL connection string (`postgresql://user:pass@host:port/db`).
+- REDIS_URL: Redis connection string.
+- CHAT_ID / ADMIN_CHAT_ID: main group and admin/log group IDs.
+- ADMIN_IDS / BANNED_BY_ID: privileged users and filter targets.
+- SEMESTER_START (YYYY-MM-DD), TIMEZONE (default Europe/London).
+- DEBUG: `true` uses the aggressive DEBUG trigger profile (reply every 2 messages).
+- PERSONA_ENGINE_URL / PERSONA_ENGINE_SECRET / PERSONA_ENGINE_TIMEOUT: LLM engine endpoint and shared secret.
+- WEBHOOK_DOMAIN / WEBHOOK_PATH / WEBHOOK_SECRET / PORT: webhook mode; if WEBHOOK_DOMAIN is empty the bot falls back to long polling.
 
 ## Local Development via Docker
 
-Ensure Docker and Docker Compose are installed on your system.
+```
+cp .env.sample .env      # fill in the values
+docker compose up --build
+```
 
-1. Clone the repository and navigate to the directory.
-2. Create a .env file based on .env.sample.
-3. Execute the following command to build and start the services:
-   
-   docker compose up --build
-
-The services will be initialized in an isolated network. The database port is not exposed to the host machine for security purposes.
+Brings up `db`, `redis`, and the `bot`. The persona engine runs separately (see
+`../jan-diddy-llm`); the compose bot reaches it via `host.docker.internal`.
 
 ## Deployment on Railway.com
 
-This project is optimized for deployment on Railway using the provided Dockerfile.
-
-1. Create a new project on Railway.
-2. Provision a PostgreSQL instance.
-3. Link your repository or use the Railway CLI:
-   
-   railway link
-   railway up
-
-4. Configuration on Railway:
-   - Ensure the DATABASE_URL variable is correctly linked from your PostgreSQL service.
-   - Add all remaining variables from the Configuration section to the bot service.
-   - The bot will automatically handle the postgresql:// to postgres:// scheme conversion required by Tortoise ORM.
+1. Provision PostgreSQL and Redis.
+2. `railway link` and `railway up` (or link the GitHub repo).
+3. Set the Configuration variables; DATABASE_URL is linked from the PostgreSQL service.
+4. The `postgresql://` → `postgres://` scheme conversion is handled automatically.
 
 ## Database Migrations
 
-Database schema changes are managed via Aerich.
+Managed via Aerich.
 
-- Initializing a new database:
-  poetry run aerich init-db
+```
+poetry run aerich migrate     # create a migration after model changes
+poetry run aerich upgrade     # apply migrations
+```
 
-- Creating a new migration after model changes:
-  poetry run aerich migrate
+Migrations are applied automatically on startup (`connect_db`) and in the Docker
+`CMD`, so a deploy needs no manual step.
 
-- Applying migrations:
-  poetry run aerich upgrade
+## Tests
 
-Note: On Railway and within Docker Compose, migrations are applied automatically during the container startup process.
-
-## Moderation Policy
-
-The bot implements a strict content policy for designated users. Messages containing prohibited substrings (including variations using leetspeak or homoglyphs) are automatically deleted without further notification to maintain group decorum.
+```
+poetry run pytest
+```

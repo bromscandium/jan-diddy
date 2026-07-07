@@ -1,4 +1,4 @@
-from app.models import Warnings
+from app.community.models import Warnings
 
 
 async def create_warning(user_id: int, reason: str) -> Warnings:
