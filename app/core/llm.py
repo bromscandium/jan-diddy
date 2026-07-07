@@ -49,7 +49,7 @@ DEBUG = TriggerConfig(
     reply_probability=0.5,
     prewarm_messages=1,
     prewarm_minutes=0,
-    spontaneous=TrackConfig(min_messages=2, min_minutes=0, probability=1.0, cooldown_minutes=0),
+    spontaneous=TrackConfig(min_messages=5, min_minutes=0, probability=1.0, cooldown_minutes=0),
     addressed=TrackConfig(min_messages=1, min_minutes=0, probability=1.0, cooldown_minutes=0),
 )
 
