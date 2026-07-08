@@ -39,8 +39,12 @@ def keyword_score(text: str) -> int:
     return total
 
 
+def is_quality_mark(text: str) -> bool:
+    return text.strip().lower().startswith("/q")
+
+
 def has_signal(text: str) -> bool:
-    return keyword_score(text) != 0
+    return is_quality_mark(text) or keyword_score(text) != 0
 
 
 def _pending_key(chat_id: int, bot_message_id: int) -> str:
@@ -114,5 +118,8 @@ async def apply_reaction(chat_id: int, bot_message_id: int, emoji: str) -> None:
 
 
 async def apply_reply_signal(chat_id: int, bot_message_id: int, text: str) -> None:
+    if is_quality_mark(text):
+        await _add_score(chat_id, bot_message_id, 5)
+        return
     ks = keyword_score(text)
     await _add_score(chat_id, bot_message_id, ks if ks else 1)

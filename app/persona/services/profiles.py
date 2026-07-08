@@ -9,6 +9,19 @@ def _key(user_id: int) -> str:
     return f"jd:profile:{user_id}"
 
 
+async def mark_replied(user_id: int | None, username: str) -> None:
+    if user_id is None:
+        return
+    try:
+        profile, _ = await UserProfiles.get_or_create(user_id=user_id, defaults={"username": username})
+        profile.replies_to_them += 1
+        profile.username = username
+        profile.last_seen = datetime.now(UTC)
+        await profile.save()
+    except Exception as exc:
+        logger.warning(f"profiles.mark_replied failed: {exc}")
+
+
 async def record(user_id: int | None, username: str, delta: int) -> None:
     if user_id is None:
         return

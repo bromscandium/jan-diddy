@@ -45,6 +45,8 @@ async def listener(update: Update, context: CallbackContext) -> None:
     user = msg.from_user
     if user and user.is_bot:
         return
+    if msg.message_thread_id is not None:
+        return
 
     chat_id = msg.chat_id
     thread_id = msg.message_thread_id
@@ -87,6 +89,7 @@ async def listener(update: Update, context: CallbackContext) -> None:
         context.bot, chat_id, reply, message_thread_id=thread_id, reply_to_message_id=reply_to
     )
     await state.register_reply(chat_id, thread_id, track, time.time(), track_cfg.cooldown_minutes)
+    await profiles.mark_replied(user_id, username)
     context_text = _context_text(ctx)
     await history.save_bot_reply(chat_id, thread_id, sent.message_id if sent else None, context_text, reply)
     if sent:
