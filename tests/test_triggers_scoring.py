@@ -47,3 +47,8 @@ def test_reaction_score_grade():
     assert scoring.reaction_score("😂") > scoring.reaction_score("👎")
     assert scoring.reaction_score("👎") < 0
     assert scoring.reaction_score("🤮") < 0
+
+
+def test_scoring_word_boundary_no_substring_false_positive():
+    assert scoring.has_signal("норм тема") is True
+    assert scoring.has_signal("це ненормально виглядає") is False

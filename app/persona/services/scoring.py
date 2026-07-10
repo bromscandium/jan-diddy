@@ -6,29 +6,7 @@ from tortoise.expressions import F
 from app.core.logger import logger
 from app.core.redis import redis
 from app.persona.models import SuccessfulDialogs
-from app.persona.services import profiles, state
-
-LAUGH = [
-    "ахаха", "ахах", "хаха", "хах", "ржу", "ржач", "ржал", "угар", "орну", "орж", "ору",
-    "лол", "кек", "хихи", "хіхі", "гыгы", "гигі", "лмао", "lmao", "lol",
-]
-APPROVAL = [
-    "база", "збс", "огонь", "вогонь", "агонь", "пушка", "красав", "топчик", "топово",
-    "ахує", "охує", "заєбіс", "заебис", "заєбок", "піздат", "пиздат",
-    "імба", "імбов", "кайф", "жиза", "вайб", "найс", "nice", "супер", "круто", "крутяк",
-    "класн", "бомба", "бомбов", "мощно", "потужн", "красота", "молодц", "молодець", "респект",
-    "прикол", "смішн", "смешн", "шедевр", "легендар", "гені", "чітко", "четко", "норм", "гарно", "зарош",
-]
-NEGATIVE = [
-    "не смішн", "не смешн", "нудн", "душнил", "душніл", "маячн", "бред", "нецікав", "неинтересн",
-    "не в тему", "не то", "фейл", "fail", "провал", "скучн", "зевот", "розчарув", "разочаров",
-    "тупизн", "тупак", "відстій", "відстой", "скам", "не зайшл", "не смешно", "мимо кас",
-]
-AMBIGUOUS = [
-    "хуйн", "гівн", "говн", "кринж", "cringe", "зашквар", "днищ", "пздц", "піздєц", "піздець",
-    "пиздец", "лажа", "жесть", "капец", "капець", "трэш", "треш", "трешак",
-    "даун", "дебіл", "ідіот", "чмо", "клоун", "дурак", "лошар", "фігн", "херн", "хєрн",
-]
+from app.persona.services import lexicon, profiles, state
 
 ENGAGEMENT_EMOJI = {"😂", "🤣", "🔥", "❤", "❤️", "👍", "👏", "💯", "🫡"}
 NEGATIVE_EMOJI = {"🤮", "🤢", "🥱"}
@@ -39,9 +17,8 @@ IGNORED_ACTIVITY_MIN = 3
 PENDING_META_TTL = 7200
 
 
-def _roots(text: str, roots: list[str]) -> int:
-    low = text.lower()
-    return sum(1 for r in roots if r in low)
+def _channel(text: str, group: str) -> int:
+    return lexicon.count(text, "scoring", group)
 
 
 def _emoji(text: str, chars: set[str]) -> int:
@@ -56,18 +33,23 @@ def has_signal(text: str) -> bool:
     if is_quality_mark(text):
         return True
     return bool(
-        _roots(text, LAUGH) or _roots(text, APPROVAL) or _roots(text, NEGATIVE) or _roots(text, AMBIGUOUS)
-        or _emoji(text, ENGAGEMENT_EMOJI) or _emoji(text, NEGATIVE_EMOJI) or _emoji(text, AMBIGUOUS_EMOJI)
+        _channel(text, "laugh")
+        or _channel(text, "approval")
+        or _channel(text, "negative")
+        or _channel(text, "ambiguous")
+        or _emoji(text, ENGAGEMENT_EMOJI)
+        or _emoji(text, NEGATIVE_EMOJI)
+        or _emoji(text, AMBIGUOUS_EMOJI)
     )
 
 
 def reply_score(text: str) -> int:
     if is_quality_mark(text):
         return 5
-    laugh = _roots(text, LAUGH) + _emoji(text, ENGAGEMENT_EMOJI)
-    appr = _roots(text, APPROVAL)
-    neg = _roots(text, NEGATIVE) + _emoji(text, NEGATIVE_EMOJI)
-    amb = _roots(text, AMBIGUOUS) + _emoji(text, AMBIGUOUS_EMOJI)
+    laugh = _channel(text, "laugh") + _emoji(text, ENGAGEMENT_EMOJI)
+    appr = _channel(text, "approval")
+    neg = _channel(text, "negative") + _emoji(text, NEGATIVE_EMOJI)
+    amb = _channel(text, "ambiguous") + _emoji(text, AMBIGUOUS_EMOJI)
     if laugh:
         return max(1, 2 + min(laugh, 3) + min(appr, 1) - min(neg, 2))
     if neg:

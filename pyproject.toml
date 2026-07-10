@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jan-diddy"
-version = "6.2.0"
+version = "6.2.1"
 
 description = "Telegram bot with Tortoise ORM"
 authors = ["bromscandium"]
