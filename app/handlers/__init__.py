@@ -58,6 +58,19 @@ def setup_handlers(app: Application) -> None:
         ),
         group=1,
     )
+    media_filter = (
+        filters.Sticker.ALL
+        | filters.PHOTO
+        | filters.ANIMATION
+        | filters.VIDEO
+        | filters.VIDEO_NOTE
+        | filters.VOICE
+        | filters.AUDIO
+    )
+    app.add_handler(
+        MessageHandler((filters.ChatType.GROUP | filters.ChatType.SUPERGROUP) & media_filter, listener.media_listener),
+        group=1,
+    )
     app.add_handler(MessageReactionHandler(reactions.on_reaction), group=1)
 
 

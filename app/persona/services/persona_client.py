@@ -10,6 +10,19 @@ def _engine_headers() -> dict[str, str]:
     return {}
 
 
+async def rewrite(seed: str, timeout: float = 20.0) -> str | None:
+    url = f"{llm_settings.PERSONA_ENGINE_URL}/v1/generate-reply"
+    payload = {"messages": [{"username": "jan", "text": seed}], "mode": "rewrite"}
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.post(url, json=payload, headers=_engine_headers())
+            resp.raise_for_status()
+            return (resp.json().get("reply", "") or "").strip() or None
+    except Exception as exc:
+        logger.warning(f"rewrite failed: {exc}")
+        return None
+
+
 async def prewarm() -> None:
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:

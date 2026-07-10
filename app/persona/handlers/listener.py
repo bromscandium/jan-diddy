@@ -4,13 +4,57 @@ import time
 from telegram import Update
 from telegram.ext import CallbackContext
 
-from app.core.llm import trigger_config
+from app.core.llm import llm_settings, trigger_config
 from app.persona.services import history, persona_client, profiles, scoring, state, triggers
+from app.persona.services.rendering import render_context
 from app.utils.typing import type_then_send
 
 
 def _context_text(ctx: list[dict]) -> str:
+    if llm_settings.PERSONA_FORMAT == "tagged":
+        return render_context(ctx)
     return "\n".join(f"{m['username']}: {m['text']}" for m in ctx)
+
+
+def _media_label(msg) -> str | None:
+    if msg.sticker:
+        return "[стікер]"
+    if msg.photo:
+        return "[фото]"
+    if msg.animation:
+        return "[гіф]"
+    if msg.voice:
+        return "[голосове]"
+    if msg.video or msg.video_note:
+        return "[відео]"
+    if msg.audio:
+        return "[аудіо]"
+    return None
+
+
+async def media_listener(update: Update, context: CallbackContext) -> None:
+    if llm_settings.PERSONA_FORMAT != "tagged":
+        return
+    msg = update.effective_message
+    if not msg or msg.message_thread_id is not None:
+        return
+    user = msg.from_user
+    if user and user.is_bot:
+        return
+    label = _media_label(msg)
+    if not label:
+        return
+    caption = (msg.caption or "").strip()
+    has_link = any(e.type in ("url", "text_link") for e in (msg.caption_entities or []))
+    if caption and not has_link and "http" not in caption.lower() and not caption.startswith("/"):
+        text = f"{label} {caption}"
+    else:
+        text = label
+    user_id = user.id if user else None
+    username = user.full_name if user else "anon"
+    ts = int(msg.date.timestamp()) if msg.date else int(time.time())
+    await state.record_incoming(msg.chat_id, None, user_id, username, text, msg.message_id, ts)
+    await history.save_message(msg.chat_id, None, msg.message_id, user_id, username, text, ts)
 
 
 async def _is_addressed(msg, context: CallbackContext, last_bot: int | None) -> bool:
@@ -57,6 +101,7 @@ async def listener(update: Update, context: CallbackContext) -> None:
     await state.record_incoming(chat_id, thread_id, user_id, username, msg.text, msg.message_id, ts)
     await history.save_message(chat_id, thread_id, msg.message_id, user_id, username, msg.text, ts)
     await _score_previous(chat_id, thread_id, msg)
+    await scoring.sweep_ignored(chat_id, thread_id, ts)
 
     cfg = trigger_config()
     last_bot = await scoring.last_bot_message(chat_id, thread_id)
@@ -75,7 +120,10 @@ async def listener(update: Update, context: CallbackContext) -> None:
         return
 
     ctx = await state.get_context(chat_id, thread_id)
-    payload = [{"username": m["username"], "text": m["text"]} for m in ctx]
+    payload = [
+        {"username": m["username"], "text": m["text"], "ts": m.get("ts"), "user_id": m.get("user_id")}
+        for m in ctx
+    ]
     target = {"user_id": user_id, "username": username, "text": msg.text} if addressed else None
     reply = await persona_client.generate(payload, chat_id, thread_id, mode=track, target=target)
     if not reply:

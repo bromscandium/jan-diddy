@@ -27,20 +27,23 @@ def test_zero_probability_never_fires():
     assert triggers.should_reply(zero, _state(), DEBUG) is False
 
 
-def test_keyword_score_positive_and_negative():
-    assert scoring.keyword_score("ахаха жесть") > 0
-    assert scoring.keyword_score("це база") > 0
-    assert scoring.keyword_score("ну це хуйня") < 0
-    assert scoring.keyword_score("доброго ранку") == 0
+def test_reply_score_positive_and_negative():
+    assert scoring.reply_score("ахаха жесть") > 0
+    assert scoring.reply_score("це база") > 0
+    assert scoring.reply_score("ну це хуйня") < 0
+    assert scoring.has_signal("доброго ранку") is False
 
 
-def test_keyword_detected_inside_word():
-    assert scoring.keyword_score("ти ахуєнно зробив") > 0
-    assert scoring.keyword_score("повна хуйня вийшла") < 0
+def test_reply_score_detects_roots_inside_words():
+    assert scoring.reply_score("ти ахуєнно зробив") > 0
+    assert scoring.reply_score("повна хуйня вийшла") < 0
 
 
-def test_reaction_weights_grade():
-    assert scoring.REACTION_WEIGHTS["😂"] > scoring.REACTION_WEIGHTS["👍"]
-    assert scoring.REACTION_WEIGHTS["👎"] < 0
-    assert scoring.REACTION_WEIGHTS["🤮"] < 0
-    assert "💀" not in scoring.REACTION_WEIGHTS
+def test_sarcasm_laughter_beats_insult():
+    assert scoring.reply_score("ор ахах ну і хуйню ти зморозив") > 0
+
+
+def test_reaction_score_grade():
+    assert scoring.reaction_score("😂") > scoring.reaction_score("👎")
+    assert scoring.reaction_score("👎") < 0
+    assert scoring.reaction_score("🤮") < 0

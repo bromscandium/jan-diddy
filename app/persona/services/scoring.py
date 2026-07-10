@@ -1,42 +1,51 @@
 import json
-import re
+import time
+
+from tortoise.expressions import F
 
 from app.core.logger import logger
 from app.core.redis import redis
 from app.persona.models import SuccessfulDialogs
-from app.persona.services import profiles
+from app.persona.services import profiles, state
 
-REACTION_WEIGHTS = {
-    "😂": 3, "🤣": 3, "🔥": 2, "❤": 1, "❤️": 1, "👍": 1, "👏": 1,
-    "👎": -2, "💩": -2, "🤡": -2, "🤮": -3, "🤢": -3,
-}
+LAUGH = [
+    "ахаха", "ахах", "хаха", "хах", "ржу", "ржач", "ржал", "угар", "орну", "орж", "ору",
+    "лол", "кек", "хихи", "хіхі", "гыгы", "гигі", "лмао", "lmao", "lol",
+]
+APPROVAL = [
+    "база", "збс", "огонь", "вогонь", "агонь", "пушка", "красав", "топчик", "топово",
+    "ахує", "охує", "заєбіс", "заебис", "заєбок", "піздат", "пиздат",
+    "імба", "імбов", "кайф", "жиза", "вайб", "найс", "nice", "супер", "круто", "крутяк",
+    "класн", "бомба", "бомбов", "мощно", "потужн", "красота", "молодц", "молодець", "респект",
+    "прикол", "смішн", "смешн", "шедевр", "легендар", "гені", "чітко", "четко", "норм", "гарно", "зарош",
+]
+NEGATIVE = [
+    "не смішн", "не смешн", "нудн", "душнил", "душніл", "маячн", "бред", "нецікав", "неинтересн",
+    "не в тему", "не то", "фейл", "fail", "провал", "скучн", "зевот", "розчарув", "разочаров",
+    "тупизн", "тупак", "відстій", "відстой", "скам", "не зайшл", "не смешно", "мимо кас",
+]
+AMBIGUOUS = [
+    "хуйн", "гівн", "говн", "кринж", "cringe", "зашквар", "днищ", "пздц", "піздєц", "піздець",
+    "пиздец", "лажа", "жесть", "капец", "капець", "трэш", "треш", "трешак",
+    "даун", "дебіл", "ідіот", "чмо", "клоун", "дурак", "лошар", "фігн", "херн", "хєрн",
+]
 
-KEYWORD_WEIGHTS = {
-    "ахаха": 3, "ахах": 3, "хаха": 2, "хах": 2, "ржу": 3, "ржач": 3, "угар": 3,
-    "орну": 3, "ору": 3, "орж": 3, "лол": 2, "кек": 2,
-    "база": 2, "збс": 2, "огонь": 2, "вогонь": 2, "агонь": 2, "пушка": 2, "красав": 2, "топчик": 2, "топово": 2,
-    "ахує": 3, "охує": 3, "заєбіс": 3, "заебис": 3, "заєбок": 3, "піздат": 3, "пиздат": 3,
-    "піздєц": 2, "піздець": 2, "пиздец": 2, "пздц": 2,
-    "імба": 3, "імбов": 3, "кайф": 2, "зарош": 2, "жиза": 2, "вайб": 2, "найс": 2, "nice": 2,
-    "супер": 2, "круто": 2, "крутяк": 3, "класн": 2, "бомба": 2, "бомбов": 2, "мощно": 2, "потужн": 2,
-    "красота": 2, "молодц": 2, "молодець": 2, "респект": 2, "гарно": 1, "норм": 1,
-    "прикол": 2, "смішн": 2, "жесть": 2, "чітко": 1, "четко": 1, "шедевр": 3, "легендар": 3,
-    "хуйн": -3, "гівн": -3, "говн": -3, "днищ": -2, "кринж": -2, "cringe": -2, "зашквар": -2,
-    "скам": -2, "лажа": -2, "відстій": -2, "відстой": -2, "фейл": -2, "fail": -2, "лошар": -2,
-    "даун": -2, "тупак": -2, "тупизн": -2, "душнил": -2, "душніл": -2, "маячня": -2,
-    "херн": -1, "хєрн": -1, "фігн": -1, "нудн": -1, "бред": -1,
-}
+ENGAGEMENT_EMOJI = {"😂", "🤣", "🔥", "❤", "❤️", "👍", "👏", "💯", "🫡"}
+NEGATIVE_EMOJI = {"🤮", "🤢", "🥱"}
+AMBIGUOUS_EMOJI = {"🤡", "👎", "💩"}
+
 SCORING_WINDOW = 120
+IGNORED_ACTIVITY_MIN = 3
+PENDING_META_TTL = 7200
 
 
-def keyword_score(text: str) -> int:
-    total = 0
-    for word in re.findall(r"\w+", text.lower()):
-        for root, weight in KEYWORD_WEIGHTS.items():
-            if root in word:
-                total += weight
-                break
-    return total
+def _roots(text: str, roots: list[str]) -> int:
+    low = text.lower()
+    return sum(1 for r in roots if r in low)
+
+
+def _emoji(text: str, chars: set[str]) -> int:
+    return sum(text.count(c) for c in chars)
 
 
 def is_quality_mark(text: str) -> bool:
@@ -44,20 +53,52 @@ def is_quality_mark(text: str) -> bool:
 
 
 def has_signal(text: str) -> bool:
-    return is_quality_mark(text) or keyword_score(text) != 0
+    if is_quality_mark(text):
+        return True
+    return bool(
+        _roots(text, LAUGH) or _roots(text, APPROVAL) or _roots(text, NEGATIVE) or _roots(text, AMBIGUOUS)
+        or _emoji(text, ENGAGEMENT_EMOJI) or _emoji(text, NEGATIVE_EMOJI) or _emoji(text, AMBIGUOUS_EMOJI)
+    )
 
 
-def _pending_key(chat_id: int, bot_message_id: int) -> str:
-    return f"jd:pending:{chat_id}:{bot_message_id}"
+def reply_score(text: str) -> int:
+    if is_quality_mark(text):
+        return 5
+    laugh = _roots(text, LAUGH) + _emoji(text, ENGAGEMENT_EMOJI)
+    appr = _roots(text, APPROVAL)
+    neg = _roots(text, NEGATIVE) + _emoji(text, NEGATIVE_EMOJI)
+    amb = _roots(text, AMBIGUOUS) + _emoji(text, AMBIGUOUS_EMOJI)
+    if laugh:
+        return max(1, 2 + min(laugh, 3) + min(appr, 1) - min(neg, 2))
+    if neg:
+        return -(2 + min(neg, 2))
+    if appr:
+        return max(1, 1 + min(appr, 3))
+    if amb:
+        return -1
+    return 1
+
+
+def reaction_score(emoji: str) -> int:
+    if emoji in ENGAGEMENT_EMOJI:
+        return 3
+    if emoji in NEGATIVE_EMOJI:
+        return -3
+    if emoji in AMBIGUOUS_EMOJI:
+        return -1
+    return 1
+
+
+def _meta_key(chat_id: int, bot_message_id: int) -> str:
+    return f"jd:pendmeta:{chat_id}:{bot_message_id}"
+
+
+def _idx_key(chat_id: int, thread_id: int | None) -> str:
+    return f"jd:pendidx:{chat_id}:{thread_id if thread_id is not None else 'none'}"
 
 
 def _lastbot_key(chat_id: int, thread_id: int | None) -> str:
     return f"jd:lastbot:{chat_id}:{thread_id if thread_id is not None else 'none'}"
-
-
-def is_approval(text: str) -> bool:
-    low = text.lower()
-    return any(k in low for k in APPROVAL_KEYWORDS)
 
 
 async def register_pending(
@@ -68,21 +109,39 @@ async def register_pending(
     reply: str,
     target_user_id: int | None,
     target_username: str = "",
+    topic: str | None = None,
 ) -> None:
-    payload = json.dumps(
+    created = int(time.time())
+    row_id = None
+    try:
+        row = await SuccessfulDialogs.create(
+            chat_id=chat_id,
+            thread_id=thread_id,
+            user_id=target_user_id,
+            topic=topic,
+            context=context,
+            reply=reply,
+            score=0,
+        )
+        row_id = row.id
+    except Exception as exc:
+        logger.warning(f"pending row create failed: {exc}")
+    meta = json.dumps(
         {
-            "chat_id": chat_id,
+            "row_id": row_id,
+            "created": created,
+            "thread_id": thread_id,
+            "topic": topic,
             "context": context,
             "reply": reply,
             "target_user_id": target_user_id,
             "target_username": target_username,
-            "score": 0,
-            "row_id": None,
         }
     )
     pipe = redis().pipeline()
-    pipe.set(_pending_key(chat_id, bot_message_id), payload, ex=SCORING_WINDOW + 30)
+    pipe.set(_meta_key(chat_id, bot_message_id), meta, ex=PENDING_META_TTL)
     pipe.set(_lastbot_key(chat_id, thread_id), bot_message_id, ex=SCORING_WINDOW)
+    pipe.zadd(_idx_key(chat_id, thread_id), {str(bot_message_id): created + SCORING_WINDOW})
     await pipe.execute()
 
 
@@ -91,35 +150,63 @@ async def last_bot_message(chat_id: int, thread_id: int | None) -> int | None:
     return int(v) if v else None
 
 
-async def _add_score(chat_id: int, bot_message_id: int, delta: int) -> None:
-    r = redis()
-    key = _pending_key(chat_id, bot_message_id)
-    raw = await r.get(key)
+async def _add_score(chat_id: int, bot_message_id: int, delta: int, source: str) -> None:
+    raw = await redis().get(_meta_key(chat_id, bot_message_id))
     if not raw:
+        logger.info(f"scoring: {source} ({delta:+d}) on bot msg {bot_message_id} — window closed, skipped")
         return
-    data = json.loads(raw)
-    data["score"] += delta
+    meta = json.loads(raw)
+    row_id = meta.get("row_id")
     try:
-        if data["row_id"]:
-            await SuccessfulDialogs.filter(id=data["row_id"]).update(score=data["score"])
-        else:
+        if row_id is None:
             row = await SuccessfulDialogs.create(
-                chat_id=chat_id, context=data["context"], reply=data["reply"], score=data["score"]
+                chat_id=chat_id,
+                thread_id=meta.get("thread_id"),
+                user_id=meta.get("target_user_id"),
+                topic=meta.get("topic"),
+                context=meta.get("context", ""),
+                reply=meta.get("reply", ""),
+                score=delta,
             )
-            data["row_id"] = row.id
+            meta["row_id"] = row.id
+            await redis().set(_meta_key(chat_id, bot_message_id), json.dumps(meta), ex=PENDING_META_TTL)
+        else:
+            await SuccessfulDialogs.filter(id=row_id).update(score=F("score") + delta)
+            row = await SuccessfulDialogs.filter(id=row_id).first()
     except Exception as exc:
         logger.warning(f"scoring persist failed: {exc}")
-    await r.set(key, json.dumps(data), ex=SCORING_WINDOW + 30)
-    await profiles.record(data.get("target_user_id"), data.get("target_username", ""), delta)
+        return
+    total = row.score if row else "?"
+    logger.info(f"scoring: {source} ({delta:+d}) on bot msg {bot_message_id} → total {total}")
+    await profiles.record(meta.get("target_user_id"), meta.get("target_username", ""), delta)
 
 
 async def apply_reaction(chat_id: int, bot_message_id: int, emoji: str) -> None:
-    await _add_score(chat_id, bot_message_id, REACTION_WEIGHTS.get(emoji, 1))
+    await _add_score(chat_id, bot_message_id, reaction_score(emoji), f"reaction {emoji}")
 
 
 async def apply_reply_signal(chat_id: int, bot_message_id: int, text: str) -> None:
-    if is_quality_mark(text):
-        await _add_score(chat_id, bot_message_id, 5)
-        return
-    ks = keyword_score(text)
-    await _add_score(chat_id, bot_message_id, ks if ks else 1)
+    await _add_score(chat_id, bot_message_id, reply_score(text), f"reply {text[:40]!r}")
+
+
+async def sweep_ignored(chat_id: int, thread_id: int | None, now_ts: int) -> None:
+    idx = _idx_key(chat_id, thread_id)
+    r = redis()
+    due = await r.zrangebyscore(idx, "-inf", now_ts)
+    for member in due:
+        bot_message_id = int(member)
+        raw = await r.get(_meta_key(chat_id, bot_message_id))
+        if raw:
+            meta = json.loads(raw)
+            row_id = meta.get("row_id")
+            created = meta.get("created", 0)
+            if row_id is not None:
+                try:
+                    active = await state.count_after(chat_id, thread_id, created, created + SCORING_WINDOW)
+                    if active >= IGNORED_ACTIVITY_MIN:
+                        await SuccessfulDialogs.filter(id=row_id, score=0).update(score=-1)
+                        logger.info(f"scoring: ignored (-1) on bot msg {bot_message_id} (row {row_id})")
+                except Exception as exc:
+                    logger.warning(f"sweep finalize failed: {exc}")
+        await r.zrem(idx, member)
+        await r.delete(_meta_key(chat_id, bot_message_id))

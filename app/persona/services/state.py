@@ -41,6 +41,19 @@ async def get_context(chat_id: int, thread_id: int | None) -> list[dict]:
     return items
 
 
+async def count_after(chat_id: int, thread_id: int | None, ts_cutoff: int, ts_until: int | None = None) -> int:
+    raw = await redis().lrange(f"{_prefix(chat_id, thread_id)}:buf", 0, llm_settings.BUFFER_SIZE - 1)
+    total = 0
+    for x in raw:
+        try:
+            ts = json.loads(x).get("ts", 0)
+        except (ValueError, TypeError):
+            continue
+        if ts > ts_cutoff and (ts_until is None or ts <= ts_until):
+            total += 1
+    return total
+
+
 async def get_track(chat_id: int, thread_id: int | None, track: str) -> dict:
     h = await redis().hgetall(f"{_prefix(chat_id, thread_id)}:{track}")
     return {

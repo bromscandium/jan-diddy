@@ -1,8 +1,6 @@
-import functools
 import random
 import re
 import unicodedata
-from collections.abc import Awaitable, Callable
 
 from telegram import Update
 from telegram.ext import CallbackContext
@@ -10,26 +8,8 @@ from telegram.ext import CallbackContext
 from app.core.bot import bot_settings
 from app.community.services import jokes, predictions
 from app.community.services.weather import fetch_weather
+from app.persona.services import persona_client
 from app.utils.decorators import general_chat_limit, personal_limit
-
-Handler = Callable[[Update, CallbackContext], Awaitable[None]]
-
-
-def random_reply(template: str, fetch: Callable[[], Awaitable[str]]) -> Callable[[Handler], Handler]:
-    def decorator(func: Handler) -> Handler:
-        @functools.wraps(func)
-        async def wrapper(update: Update, context: CallbackContext) -> None:
-            if not update.message:
-                return
-            await update.message.reply_text(
-                template.format(name=update.effective_user.full_name, text=await fetch())
-            )
-
-        return wrapper
-
-    return decorator
-
-# Evian, big brother is watching you
 
 MULTI_CHAR_HOMOGLYPHS = {
     "()": "o",
@@ -175,7 +155,6 @@ def is_bro_detected(text: str) -> bool:
     pattern = r"b+[\W_]*r+[\W_]*o+"
     for match in re.finditer(pattern, n):
         start, end = match.span()
-        # Expand to whitespace boundaries to catch the full word/block
         while start > 0 and not n[start - 1].isspace():
             start -= 1
         while end < len(n) and not n[end].isspace():
@@ -200,14 +179,22 @@ async def bro_monitor(update: Update, context: CallbackContext):
 
 @general_chat_limit
 @personal_limit(61)
-@random_reply("Dnes máš takéto predpovedanie, {name}:\n{text}", predictions.read_random_prediction)
-async def predict(update: Update, context: CallbackContext) -> None: ...
+async def predict(update: Update, context: CallbackContext) -> None:
+    if not update.message:
+        return
+    seed = await predictions.read_random_prediction()
+    text = await persona_client.rewrite(seed) or seed
+    await update.message.reply_text(f"Dnes máš takéto predpovedanie, {update.effective_user.full_name}:\n{text}")
 
 
 @general_chat_limit
 @personal_limit(121)
-@random_reply("Počúvaj tento žart, {name}:\n{text}", jokes.read_random_joke)
-async def joke(update: Update, context: CallbackContext) -> None: ...
+async def joke(update: Update, context: CallbackContext) -> None:
+    if not update.message:
+        return
+    seed = await jokes.read_random_joke()
+    text = await persona_client.rewrite(seed) or seed
+    await update.message.reply_text(f"Počúvaj tento žart, {update.effective_user.full_name}:\n{text}")
 
 
 @general_chat_limit

@@ -1,6 +1,6 @@
 # Jan Diddy
 
-Version 6.0.0
+Version 6.2.0
 
 Asynchronous Telegram bot built with Python 3.14, python-telegram-bot, and Tortoise ORM. It combines classic group management (moderation, info, fun commands) with an AI persona that passively listens to the chat and occasionally replies in character via a separate LLM engine.
 

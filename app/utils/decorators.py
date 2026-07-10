@@ -6,7 +6,6 @@ from telegram.ext import CallbackContext
 
 from app.core.bot import bot_settings
 
-# NOTE: These limits are stored in memory and will reset upon bot restart (e.g., Railway redeploy).
 _USER_LAST_CALLED = {}
 _COMMAND_USAGE = {}
 

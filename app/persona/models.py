@@ -42,6 +42,9 @@ class BotReplies(LLMModel):
 
 class SuccessfulDialogs(LLMModel):
     chat_id = fields.BigIntField()
+    thread_id = fields.BigIntField(null=True)
+    user_id = fields.BigIntField(null=True)
+    topic = fields.TextField(null=True)
     context = fields.TextField()
     reply = fields.TextField()
     score = fields.IntField(default=0)
@@ -57,6 +60,7 @@ class UserProfiles(LLMModel):
     engagement_score = fields.IntField(default=0)
     replies_to_them = fields.IntField(default=0)
     successes = fields.IntField(default=0)
+    notes = fields.TextField(null=True)
     last_seen = fields.DatetimeField(null=True)
 
     class Meta(LLMModel.Meta):

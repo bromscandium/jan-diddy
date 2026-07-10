@@ -9,6 +9,7 @@ class LLMSettings(BaseSettings):
     PERSONA_ENGINE_URL: str = "http://localhost:8000"
     PERSONA_ENGINE_TIMEOUT: float = 120.0
     PERSONA_ENGINE_SECRET: str | None = None
+    PERSONA_FORMAT: str = "flat"
     BUFFER_SIZE: int = 100
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_nested_delimiter="__")
