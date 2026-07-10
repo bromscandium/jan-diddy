@@ -1,0 +1,10 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    ports:
+      - "5433:5432"
+
+  bot:
+    env_file:
+      - .env
+      - .env.dev
