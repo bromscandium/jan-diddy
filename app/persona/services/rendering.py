@@ -1,3 +1,6 @@
+BURST_SEP = "‖"
+
+
 def speaker_label(from_id: str | None, display: str) -> str:
     return f"[{from_id or 'user0'}] {display}"
 
@@ -5,17 +8,15 @@ def speaker_label(from_id: str | None, display: str) -> str:
 def relative_time(delta_seconds: int) -> str:
     if delta_seconds < 60:
         return "щойно"
-    minutes = delta_seconds // 60
-    if minutes < 60:
-        return f"{minutes} хв тому"
-    hours = minutes // 60
-    if hours < 24:
-        return f"{hours} год тому"
-    return f"{hours // 24} дн тому"
+    if delta_seconds < 3600:
+        return "недавно"
+    if delta_seconds < 86400:
+        return "давно"
+    return "дуже давно"
 
 
 def gap_marker(delta_seconds: int) -> str:
-    return f"— пауза {max(0, delta_seconds // 60)} хв —"
+    return "— велика пауза —"
 
 
 def render_line(from_id: str | None, display: str, ts: int | None, anchor_ts: int | None, text: str) -> str:

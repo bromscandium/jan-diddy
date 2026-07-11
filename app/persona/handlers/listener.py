@@ -6,7 +6,7 @@ from telegram.ext import CallbackContext
 
 from app.core.llm import llm_settings, trigger_config
 from app.persona.services import history, persona_client, profiles, scoring, state, triggers
-from app.persona.services.rendering import render_context
+from app.persona.services.rendering import BURST_SEP, render_context
 from app.utils.typing import type_then_send
 
 
@@ -133,9 +133,16 @@ async def listener(update: Update, context: CallbackContext) -> None:
         reply_to = msg.message_id
     else:
         reply_to = ctx[-1]["message_id"] if ctx and random.random() < cfg.reply_probability else None
-    sent = await type_then_send(
-        context.bot, chat_id, reply, message_thread_id=thread_id, reply_to_message_id=reply_to
-    )
+    parts = [p.strip() for p in reply.split(BURST_SEP) if p.strip()] or [reply]
+    sent = None
+    for idx, part in enumerate(parts):
+        sent = await type_then_send(
+            context.bot,
+            chat_id,
+            part,
+            message_thread_id=thread_id,
+            reply_to_message_id=reply_to if idx == 0 else None,
+        )
     await state.register_reply(chat_id, thread_id, track, time.time(), track_cfg.cooldown_minutes)
     await profiles.mark_replied(user_id, username)
     context_text = _context_text(ctx)

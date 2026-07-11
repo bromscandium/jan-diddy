@@ -1,6 +1,6 @@
 # Jan Diddy
 
-Version 6.2.0
+Version 6.3.0
 
 Asynchronous Telegram bot built with Python 3.14, python-telegram-bot, and Tortoise ORM. It combines classic group management (moderation, info, fun commands) with an AI persona that passively listens to the chat and occasionally replies in character via a separate LLM engine.
 
@@ -40,7 +40,7 @@ bot never loads the model itself.
 - Targeted Content Filter: homoglyph/leetspeak normalization filter for users in the banned registry.
 - Information Services: academic schedules, rules, Moodle links, semester progress.
 - Entertainment: OpenWeatherMap weather, random jokes, probability predictions.
-- AI Persona: passive listener that reconstructs recent chat context, probabilistically decides to reply, and generates an in-character reply via the LLM engine. Successful replies (reactions / laughter keywords) are recorded for future fine-tuning.
+- AI Persona: passive listener that reconstructs recent chat context, probabilistically decides to reply, and generates an in-character reply via the LLM engine. On the tagged (v4) format the engine may return a `‖`-joined burst, which the listener splits into 2-3 separate messages. Successful replies (reactions / laughter keywords) are recorded for future fine-tuning.
 
 ## Technical Stack
 

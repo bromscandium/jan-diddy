@@ -1,9 +1,9 @@
 from app.persona.services.rendering import render_context
 
 EXPECTED = (
-    "[user1] Аня · 1 год тому: привіт\n"
-    "[user2] Боб · 50 хв тому: як діла\n"
-    "— пауза 50 хв —\n"
+    "[user1] Аня · давно: привіт\n"
+    "[user2] Боб · недавно: як діла\n"
+    "— велика пауза —\n"
     "[user1] Аня · щойно: нормас"
 )
 
