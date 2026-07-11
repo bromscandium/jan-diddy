@@ -58,7 +58,7 @@ def reply_score(text: str) -> int:
         return max(1, 1 + min(appr, 3))
     if amb:
         return -1
-    return 1
+    return 0
 
 
 def reaction_score(emoji: str) -> int:
@@ -135,7 +135,7 @@ async def last_bot_message(chat_id: int, thread_id: int | None) -> int | None:
 async def _add_score(chat_id: int, bot_message_id: int, delta: int, source: str) -> None:
     raw = await redis().get(_meta_key(chat_id, bot_message_id))
     if not raw:
-        logger.info(f"scoring: {source} ({delta:+d}) on bot msg {bot_message_id} — window closed, skipped")
+        logger.info(f"scoring: {source} ({delta:+d}) on msg {bot_message_id} — not a bot reply or window expired, skipped")
         return
     meta = json.loads(raw)
     row_id = meta.get("row_id")
@@ -168,7 +168,10 @@ async def apply_reaction(chat_id: int, bot_message_id: int, emoji: str) -> None:
 
 
 async def apply_reply_signal(chat_id: int, bot_message_id: int, text: str) -> None:
-    await _add_score(chat_id, bot_message_id, reply_score(text), f"reply {text[:40]!r}")
+    delta = reply_score(text)
+    if delta == 0:
+        return
+    await _add_score(chat_id, bot_message_id, delta, f"reply {text[:40]!r}")
 
 
 async def sweep_ignored(chat_id: int, thread_id: int | None, now_ts: int) -> None:
