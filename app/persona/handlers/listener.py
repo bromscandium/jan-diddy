@@ -133,6 +133,16 @@ async def listener(update: Update, context: CallbackContext) -> None:
         {"username": m["username"], "text": m["text"], "ts": m.get("ts"), "user_id": m.get("user_id")}
         for m in ctx
     ]
+    rep = msg.reply_to_message
+    rep_text = (rep.text or rep.caption) if rep else None
+    if rep_text and rep_text not in [m["text"] for m in payload]:
+        rep_user = rep.from_user
+        payload.append({
+            "username": rep_user.full_name if rep_user else "anon",
+            "text": rep_text,
+            "ts": int(rep.date.timestamp()) if rep.date else ts,
+            "user_id": rep_user.id if rep_user else None,
+        })
     target = {"user_id": user_id, "username": username, "text": msg.text} if addressed else None
     mode = "addressed" if addressed else "spontaneous"
     reply = await persona_client.generate(payload, chat_id, thread_id, mode=mode, target=target)
