@@ -1,4 +1,5 @@
 import random
+import re
 import time
 
 from telegram import Update
@@ -8,6 +9,14 @@ from app.core.llm import llm_settings, trigger_config
 from app.persona.services import history, persona_client, profiles, scoring, state, triggers
 from app.persona.services.rendering import BURST_SEP, render_context
 from app.utils.typing import type_then_send
+
+_JUNK = re.compile(r"^[\s▀-◿⬀-⯿�]+$")
+
+
+def _burst_parts(reply: str) -> list[str]:
+    parts = [p.strip() for p in reply.split(BURST_SEP)]
+    parts = [p for p in parts if p and not _JUNK.match(p)]
+    return parts[:3] or [reply.strip()]
 
 
 def _context_text(ctx: list[dict]) -> str:
@@ -133,7 +142,7 @@ async def listener(update: Update, context: CallbackContext) -> None:
         reply_to = msg.message_id
     else:
         reply_to = ctx[-1]["message_id"] if ctx and random.random() < cfg.reply_probability else None
-    parts = [p.strip() for p in reply.split(BURST_SEP) if p.strip()] or [reply]
+    parts = _burst_parts(reply)
     sent = None
     for idx, part in enumerate(parts):
         sent = await type_then_send(
