@@ -142,16 +142,10 @@ async def listener(update: Update, context: CallbackContext) -> None:
         reply_to = msg.message_id
     else:
         reply_to = ctx[-1]["message_id"] if ctx and random.random() < cfg.reply_probability else None
-    parts = _burst_parts(reply)
-    sent = None
-    for idx, part in enumerate(parts):
-        sent = await type_then_send(
-            context.bot,
-            chat_id,
-            part,
-            message_thread_id=thread_id,
-            reply_to_message_id=reply_to if idx == 0 else None,
-        )
+    text = " ".join(_burst_parts(reply))
+    sent = await type_then_send(
+        context.bot, chat_id, text, message_thread_id=thread_id, reply_to_message_id=reply_to
+    )
     await state.register_reply(chat_id, thread_id, track, time.time(), track_cfg.cooldown_minutes)
     await profiles.mark_replied(user_id, username)
     context_text = _context_text(ctx)
