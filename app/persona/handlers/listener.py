@@ -134,7 +134,8 @@ async def listener(update: Update, context: CallbackContext) -> None:
         for m in ctx
     ]
     target = {"user_id": user_id, "username": username, "text": msg.text} if addressed else None
-    reply = await persona_client.generate(payload, chat_id, thread_id, mode=track, target=target)
+    mode = "addressed" if addressed else "spontaneous"
+    reply = await persona_client.generate(payload, chat_id, thread_id, mode=mode, target=target)
     if not reply:
         return
 
