@@ -18,11 +18,19 @@ async def record_incoming(
     text: str,
     message_id: int,
     ts: int,
+    reply_to: int | None = None,
 ) -> None:
     r = redis()
     p = _prefix(chat_id, thread_id)
     item = json.dumps(
-        {"user_id": user_id, "username": username, "text": text, "message_id": message_id, "ts": ts}
+        {
+            "user_id": user_id,
+            "username": username,
+            "text": text,
+            "message_id": message_id,
+            "ts": ts,
+            "reply_to": reply_to,
+        }
     )
     pipe = r.pipeline()
     pipe.lpush(f"{p}:buf", item)

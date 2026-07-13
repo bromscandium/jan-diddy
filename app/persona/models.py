@@ -48,6 +48,9 @@ class SuccessfulDialogs(LLMModel):
     context = fields.TextField()
     reply = fields.TextField()
     score = fields.IntField(default=0)
+    verdict = fields.TextField(null=True)
+    mood = fields.TextField(null=True)
+    mode = fields.TextField(null=True)
 
     class Meta(LLMModel.Meta):
         abstract = False
