@@ -13,6 +13,8 @@ class LLMSettings(BaseSettings):
     PERSONA_THREAD_ID: int | None = None
     BUFFER_SIZE: int = 100
     CAPTION_ENABLED: bool = True
+    CAPTION_TIMEOUT: float = 120.0
+    CAPTION_MAX_BYTES: int = 8_000_000
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_nested_delimiter="__")
 

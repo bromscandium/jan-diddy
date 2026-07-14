@@ -44,8 +44,11 @@ def _media_label(msg) -> str | None:
 
 
 async def _photo_caption(msg, bot) -> str | None:
+    photo = msg.photo[-1]
+    if photo.file_size and photo.file_size > llm_settings.CAPTION_MAX_BYTES:
+        return None
     try:
-        f = await bot.get_file(msg.photo[-1].file_id)
+        f = await bot.get_file(photo.file_id)
         buf = await f.download_as_bytearray()
         return await persona_client.caption(base64.b64encode(bytes(buf)).decode())
     except Exception as exc:

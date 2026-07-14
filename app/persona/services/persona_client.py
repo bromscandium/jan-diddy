@@ -23,10 +23,10 @@ async def rewrite(seed: str, timeout: float = 20.0) -> str | None:
         return None
 
 
-async def caption(image_b64: str, timeout: float = 60.0) -> str | None:
+async def caption(image_b64: str) -> str | None:
     url = f"{llm_settings.PERSONA_ENGINE_URL}/v1/caption"
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=llm_settings.CAPTION_TIMEOUT) as client:
             resp = await client.post(url, json={"image_b64": image_b64}, headers=_engine_headers())
             resp.raise_for_status()
             return (resp.json().get("caption") or "").strip() or None
