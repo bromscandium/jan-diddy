@@ -28,14 +28,20 @@ class BotApplication:
         await init_redis()
         await init_http_session()
         logger.info("Bot started successfully")
-        await app.bot.send_message(chat_id=bot_settings.ADMIN_CHAT_ID, text="Bot started successfully")
+        await self._notify_admin(app, "Bot started successfully")
 
     async def _on_shutdown(self, app: Application) -> None:
         await close_db(app)
         await close_redis()
         await close_http_session()
         logger.info("Bot shut down")
-        await app.bot.send_message(chat_id=bot_settings.ADMIN_CHAT_ID, text="Bot shut down")
+        await self._notify_admin(app, "Bot shut down")
+
+    async def _notify_admin(self, app: Application, text: str) -> None:
+        try:
+            await app.bot.send_message(chat_id=bot_settings.ADMIN_CHAT_ID, text=text)
+        except Exception as exc:
+            logger.warning(f"admin notify failed ({text!r}): {exc!r}")
 
     async def _on_error(self, update: object, context: CallbackContext) -> None:
         error = context.error
