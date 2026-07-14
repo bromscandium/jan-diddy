@@ -1,7 +1,7 @@
 import time
 
 from app.core.llm import DEBUG, PROD
-from app.persona.services import scoring, triggers
+from app.persona import scoring, triggers
 
 
 def _state(**kw) -> dict:

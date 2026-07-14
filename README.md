@@ -1,6 +1,6 @@
 # Jan Diddy
 
-Version 6.3.0
+Version 6.6.0
 
 Asynchronous Telegram bot built with Python 3.14, python-telegram-bot, and Tortoise ORM. It combines classic group management (moderation, info, fun commands) with an AI persona that passively listens to the chat and occasionally replies in character via a separate LLM engine.
 
@@ -24,10 +24,18 @@ app/
 │   ├── models.py           BotModel base + Jokes, Predictions, Warnings
 │   ├── services/           jokes, predictions, warnings, weather
 │   └── handlers/           admin, chat, events, fun, info
-├── persona/                AI persona (schema "llm")
+├── persona/                AI persona (schema "llm") — folder per domain, files per responsibility
 │   ├── models.py           LLMModel base + Messages, BotReplies, SuccessfulDialogs
-│   ├── services/           state, triggers, persona_client, scoring, history
-│   └── handlers/           listener, reactions
+│   ├── handlers/           listener, reactions — thin dispatch only
+│   ├── orchestrator/       reply pipeline: flow, addressing, payload, ingest, formatting, media
+│   ├── client/             HTTP client to engine: base (_request helper), reply, vision, health
+│   ├── scoring/            rules (pure), keys, flywheel (redis + DB)
+│   ├── state.py            redis conversation state
+│   ├── history.py          DB message/reply log
+│   ├── profiles.py         per-user engagement bias
+│   ├── triggers.py         reply-decision predicates
+│   ├── rendering.py        tagged-format context rendering (parity with engine)
+│   └── lexicon.py/.json    keyword classifier engine
 └── handlers/__init__.py    setup_handlers() — wires both slices
 ```
 

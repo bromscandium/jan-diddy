@@ -1,4 +1,4 @@
-from app.persona.services.rendering import render_context
+from app.persona.rendering import render_context
 
 EXPECTED = (
     "[user1] Аня · давно: привіт\n"

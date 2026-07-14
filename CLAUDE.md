@@ -11,7 +11,7 @@ Companion repo: `../jan-diddy-llm` (the persona engine — FastAPI + Ollama). Th
 ## Structure — vertical slices by domain
 
 - `app/community/` — classic bot, DB schema `bot` (jokes, predictions, warnings + admin/info/fun/events/chat).
-- `app/persona/` — AI persona, DB schema `llm` (messages, bot_replies, successful_dialogs + listener/reactions).
+- `app/persona/` — AI persona, DB schema `llm`. Folder-per-domain / file-per-responsibility: `handlers/` (thin listener + reactions dispatch), `orchestrator/` (reply pipeline — `flow` + `addressing`/`payload`/`ingest`/`formatting`/`media`), `client/` (HTTP to engine — `base._request` helper + `reply`/`vision`/`health`), `scoring/` (`rules` pure + `keys` + `flywheel` redis/DB). Leaf single-responsibility modules stay flat: `state`, `history`, `profiles`, `triggers`, `rendering`, `lexicon`, `models`. Rule: make a folder only when a unit has real internal seams; otherwise one file.
 - `app/core/` — shared kernel. Settings are split per domain: `bot.py` (`bot_settings`), `db.py` (`db_settings`), `llm.py` (`llm_settings` + `TriggerConfig`), `redis.py` (`redis_settings` + client). `application.py` holds `BotApplication` (build/lifecycle/run); `main.py` just calls `BotApplication().run()`.
 - `app/handlers/__init__.py` — `setup_handlers()` wires both slices.
 

@@ -5,10 +5,10 @@ import unicodedata
 from telegram import Update
 from telegram.ext import CallbackContext
 
-from app.core.bot import bot_settings
 from app.community.services import jokes, predictions
 from app.community.services.weather import fetch_weather
-from app.persona.services import persona_client
+from app.core.bot import bot_settings
+from app.persona import client
 from app.utils.decorators import general_chat_limit, personal_limit
 
 MULTI_CHAR_HOMOGLYPHS = {
@@ -183,7 +183,7 @@ async def predict(update: Update, context: CallbackContext) -> None:
     if not update.message:
         return
     seed = await predictions.read_random_prediction()
-    text = await persona_client.rewrite(seed) or seed
+    text = await client.rewrite(seed) or seed
     await update.message.reply_text(f"Dnes máš takéto predpovedanie, {update.effective_user.full_name}:\n{text}")
 
 
@@ -193,7 +193,7 @@ async def joke(update: Update, context: CallbackContext) -> None:
     if not update.message:
         return
     seed = await jokes.read_random_joke()
-    text = await persona_client.rewrite(seed) or seed
+    text = await client.rewrite(seed) or seed
     await update.message.reply_text(f"Počúvaj tento žart, {update.effective_user.full_name}:\n{text}")
 
 

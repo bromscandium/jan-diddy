@@ -5,82 +5,17 @@ from tortoise.expressions import F
 
 from app.core.logger import logger
 from app.core.redis import redis
+from app.persona import profiles, state
 from app.persona.models import SuccessfulDialogs
-from app.persona.services import lexicon, profiles, state
-
-ENGAGEMENT_EMOJI = {"😂", "🤣", "🔥", "❤", "❤️", "👍", "👏", "💯", "🫡"}
-NEGATIVE_EMOJI = {"🤮", "🤢", "🥱"}
-AMBIGUOUS_EMOJI = {"🤡", "👎", "💩"}
-
-SCORING_WINDOW = 120
-IGNORED_ACTIVITY_MIN = 3
-PENDING_META_TTL = 7200
-
-
-def _channel(text: str, group: str) -> int:
-    return lexicon.count(text, "scoring", group)
-
-
-def _emoji(text: str, chars: set[str]) -> int:
-    return sum(text.count(c) for c in chars)
-
-
-def is_quality_mark(text: str) -> bool:
-    return text.strip().lower().startswith("/q")
-
-
-def has_signal(text: str) -> bool:
-    if is_quality_mark(text):
-        return True
-    return bool(
-        _channel(text, "laugh")
-        or _channel(text, "approval")
-        or _channel(text, "negative")
-        or _channel(text, "ambiguous")
-        or _emoji(text, ENGAGEMENT_EMOJI)
-        or _emoji(text, NEGATIVE_EMOJI)
-        or _emoji(text, AMBIGUOUS_EMOJI)
-    )
-
-
-def reply_score(text: str) -> int:
-    if is_quality_mark(text):
-        return 5
-    laugh = _channel(text, "laugh") + _emoji(text, ENGAGEMENT_EMOJI)
-    appr = _channel(text, "approval")
-    neg = _channel(text, "negative") + _emoji(text, NEGATIVE_EMOJI)
-    amb = _channel(text, "ambiguous") + _emoji(text, AMBIGUOUS_EMOJI)
-    if laugh:
-        return max(1, 2 + min(laugh, 3) + min(appr, 1) - min(neg, 2))
-    if neg:
-        return -(2 + min(neg, 2))
-    if appr:
-        return max(1, 1 + min(appr, 3))
-    if amb:
-        return -1
-    return 0
-
-
-def reaction_score(emoji: str) -> int:
-    if emoji in ENGAGEMENT_EMOJI:
-        return 3
-    if emoji in NEGATIVE_EMOJI:
-        return -3
-    if emoji in AMBIGUOUS_EMOJI:
-        return -1
-    return 1
-
-
-def _meta_key(chat_id: int, bot_message_id: int) -> str:
-    return f"jd:pendmeta:{chat_id}:{bot_message_id}"
-
-
-def _idx_key(chat_id: int, thread_id: int | None) -> str:
-    return f"jd:pendidx:{chat_id}:{thread_id if thread_id is not None else 'none'}"
-
-
-def _lastbot_key(chat_id: int, thread_id: int | None) -> str:
-    return f"jd:lastbot:{chat_id}:{thread_id if thread_id is not None else 'none'}"
+from app.persona.scoring.keys import (
+    IGNORED_ACTIVITY_MIN,
+    PENDING_META_TTL,
+    SCORING_WINDOW,
+    idx_key,
+    lastbot_key,
+    meta_key,
+)
+from app.persona.scoring.rules import reaction_score, reply_score
 
 
 async def register_pending(
@@ -121,21 +56,21 @@ async def register_pending(
         }
     )
     pipe = redis().pipeline()
-    pipe.set(_meta_key(chat_id, bot_message_id), meta, ex=PENDING_META_TTL)
-    pipe.set(_lastbot_key(chat_id, thread_id), bot_message_id, ex=SCORING_WINDOW)
-    pipe.zadd(_idx_key(chat_id, thread_id), {str(bot_message_id): created + SCORING_WINDOW})
+    pipe.set(meta_key(chat_id, bot_message_id), meta, ex=PENDING_META_TTL)
+    pipe.set(lastbot_key(chat_id, thread_id), bot_message_id, ex=SCORING_WINDOW)
+    pipe.zadd(idx_key(chat_id, thread_id), {str(bot_message_id): created + SCORING_WINDOW})
     await pipe.execute()
 
 
 async def last_bot_message(chat_id: int, thread_id: int | None) -> int | None:
-    v = await redis().get(_lastbot_key(chat_id, thread_id))
+    v = await redis().get(lastbot_key(chat_id, thread_id))
     return int(v) if v else None
 
 
 async def _add_score(chat_id: int, bot_message_id: int, delta: int, source: str) -> None:
-    raw = await redis().get(_meta_key(chat_id, bot_message_id))
+    raw = await redis().get(meta_key(chat_id, bot_message_id))
     if not raw:
-        logger.info(f"scoring: {source} ({delta:+d}) on msg {bot_message_id} — not a bot reply or window expired, skipped")
+        logger.info(f"scoring: {source} ({delta:+d}) on msg {bot_message_id} — not a bot reply / expired, skipped")
         return
     meta = json.loads(raw)
     row_id = meta.get("row_id")
@@ -151,7 +86,7 @@ async def _add_score(chat_id: int, bot_message_id: int, delta: int, source: str)
                 score=delta,
             )
             meta["row_id"] = row.id
-            await redis().set(_meta_key(chat_id, bot_message_id), json.dumps(meta), ex=PENDING_META_TTL)
+            await redis().set(meta_key(chat_id, bot_message_id), json.dumps(meta), ex=PENDING_META_TTL)
         else:
             await SuccessfulDialogs.filter(id=row_id).update(score=F("score") + delta)
             row = await SuccessfulDialogs.filter(id=row_id).first()
@@ -175,12 +110,12 @@ async def apply_reply_signal(chat_id: int, bot_message_id: int, text: str) -> No
 
 
 async def sweep_ignored(chat_id: int, thread_id: int | None, now_ts: int) -> None:
-    idx = _idx_key(chat_id, thread_id)
+    idx = idx_key(chat_id, thread_id)
     r = redis()
     due = await r.zrangebyscore(idx, "-inf", now_ts)
     for member in due:
         bot_message_id = int(member)
-        raw = await r.get(_meta_key(chat_id, bot_message_id))
+        raw = await r.get(meta_key(chat_id, bot_message_id))
         if raw:
             meta = json.loads(raw)
             row_id = meta.get("row_id")
@@ -194,4 +129,4 @@ async def sweep_ignored(chat_id: int, thread_id: int | None, now_ts: int) -> Non
                 except Exception as exc:
                     logger.warning(f"sweep finalize failed: {exc}")
         await r.zrem(idx, member)
-        await r.delete(_meta_key(chat_id, bot_message_id))
+        await r.delete(meta_key(chat_id, bot_message_id))
