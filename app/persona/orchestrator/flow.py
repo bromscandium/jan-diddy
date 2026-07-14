@@ -22,13 +22,10 @@ async def _score_previous(chat_id: int, thread_id: int | None, msg) -> None:
         await scoring.apply_reply_signal(chat_id, last_bot, msg.text)
 
 
-async def handle_text(update, context: CallbackContext, msg) -> None:
+async def _reply(update, context: CallbackContext, msg, current_text: str, user_id, username: str, ts: int) -> None:
     chat_id = msg.chat_id
     thread_id = msg.message_thread_id
     reply_to_id = msg.reply_to_message.message_id if msg.reply_to_message else None
-    user_id, username, ts = await ingest(msg, msg.text, reply_to_id)
-    await _score_previous(chat_id, thread_id, msg)
-    await scoring.sweep_ignored(chat_id, thread_id, ts)
 
     cfg = trigger_config()
     last_bot = await scoring.last_bot_message(chat_id, thread_id)
@@ -52,7 +49,7 @@ async def handle_text(update, context: CallbackContext, msg) -> None:
 
     ctx = await state.get_context(chat_id, thread_id)
     payload = build_payload(ctx, reply_to_id, msg, ts)
-    target = {"user_id": user_id, "username": username, "text": msg.text} if addressed else None
+    target = {"user_id": user_id, "username": username, "text": current_text} if addressed else None
     mode = "addressed" if addressed else "spontaneous"
     reply = await client.generate(payload, chat_id, thread_id, mode=mode, target=target)
     logger.debug(
@@ -79,3 +76,17 @@ async def handle_text(update, context: CallbackContext, msg) -> None:
             chat_id, thread_id, sent.message_id, ctx_text, reply,
             user_id if addressed else None, username if addressed else "",
         )
+
+
+async def handle_text(update, context: CallbackContext, msg) -> None:
+    reply_to_id = msg.reply_to_message.message_id if msg.reply_to_message else None
+    user_id, username, ts = await ingest(msg, msg.text, reply_to_id)
+    await _score_previous(msg.chat_id, msg.message_thread_id, msg)
+    await scoring.sweep_ignored(msg.chat_id, msg.message_thread_id, ts)
+    await _reply(update, context, msg, msg.text, user_id, username, ts)
+
+
+async def handle_media(update, context: CallbackContext, msg, text: str) -> None:
+    reply_to_id = msg.reply_to_message.message_id if msg.reply_to_message else None
+    user_id, username, ts = await ingest(msg, text, reply_to_id)
+    await _reply(update, context, msg, text, user_id, username, ts)

@@ -21,4 +21,4 @@ async def media_listener(update: Update, context: CallbackContext) -> None:
     text = await orchestrator.media_text(msg, context.bot)
     if not text:
         return
-    await orchestrator.ingest(msg, text)
+    await orchestrator.handle_media(update, context, msg, text)
