@@ -23,6 +23,18 @@ async def rewrite(seed: str, timeout: float = 20.0) -> str | None:
         return None
 
 
+async def caption(image_b64: str, timeout: float = 60.0) -> str | None:
+    url = f"{llm_settings.PERSONA_ENGINE_URL}/v1/caption"
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.post(url, json={"image_b64": image_b64}, headers=_engine_headers())
+            resp.raise_for_status()
+            return (resp.json().get("caption") or "").strip() or None
+    except Exception as exc:
+        logger.warning(f"caption failed: {exc}")
+        return None
+
+
 async def prewarm() -> None:
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:

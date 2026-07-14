@@ -1,3 +1,4 @@
+import base64
 import random
 import re
 import time
@@ -42,6 +43,16 @@ def _media_label(msg) -> str | None:
     return None
 
 
+async def _photo_caption(msg, bot) -> str | None:
+    try:
+        f = await bot.get_file(msg.photo[-1].file_id)
+        buf = await f.download_as_bytearray()
+        return await persona_client.caption(base64.b64encode(bytes(buf)).decode())
+    except Exception as exc:
+        logger.warning(f"photo caption failed: {exc}")
+        return None
+
+
 async def media_listener(update: Update, context: CallbackContext) -> None:
     if llm_settings.PERSONA_FORMAT != "tagged":
         return
@@ -54,6 +65,10 @@ async def media_listener(update: Update, context: CallbackContext) -> None:
     label = _media_label(msg)
     if not label:
         return
+    if msg.photo and llm_settings.CAPTION_ENABLED:
+        cap = await _photo_caption(msg, context.bot)
+        if cap:
+            label = f"[фото: {cap}]"
     caption = (msg.caption or "").strip()
     has_link = any(e.type in ("url", "text_link") for e in (msg.caption_entities or []))
     if caption and not has_link and "http" not in caption.lower() and not caption.startswith("/"):

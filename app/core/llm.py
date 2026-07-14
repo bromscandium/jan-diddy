@@ -12,6 +12,7 @@ class LLMSettings(BaseSettings):
     PERSONA_FORMAT: str = "flat"
     PERSONA_THREAD_ID: int | None = None
     BUFFER_SIZE: int = 100
+    CAPTION_ENABLED: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_nested_delimiter="__")
 
