@@ -1,12 +1,5 @@
-import random
-
 from telegram import Update
 from telegram.ext import CallbackContext
-
-from app.core.bot import bot_settings
-
-message_counter = 0
-next_reaction = random.randint(120, 170)
 
 
 async def welcome(update: Update, context: CallbackContext):
@@ -31,18 +24,3 @@ async def welcome(update: Update, context: CallbackContext):
                 "Uvidíme, či z teba niečo bude, alebo skončíš v tradičnom zozname.",
                 parse_mode="HTML",
             )
-
-
-async def reaction(update: Update, context: CallbackContext):
-    global message_counter, next_reaction
-    if update.message:
-        message_counter += 1
-        if message_counter >= next_reaction:
-            await context.bot.set_message_reaction(
-                chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=random.choice(bot_settings.REACTIONS),
-                is_big=False,
-            )
-            message_counter = 0
-            next_reaction = random.randint(100, 170)

@@ -9,7 +9,6 @@ class BotSettings(BaseSettings):
     CHAT_ID: int
     ADMIN_CHAT_ID: int
     ADMIN_IDS: list[int]
-    REACTIONS: list[str]
     SEMESTER_START: date
     CHAT_LINK: str
     TIMEZONE: str = "Europe/London"

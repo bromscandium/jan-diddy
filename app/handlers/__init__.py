@@ -49,9 +49,6 @@ def setup_handlers(app: Application) -> None:
     app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.COMMAND, chat.start_message))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, events.welcome))
     app.add_handler(
-        MessageHandler((filters.ChatType.GROUP | filters.ChatType.SUPERGROUP) & ~filters.COMMAND, events.reaction)
-    )
-    app.add_handler(
         MessageHandler(
             (filters.ChatType.GROUP | filters.ChatType.SUPERGROUP) & filters.TEXT & ~filters.COMMAND,
             listener.listener,

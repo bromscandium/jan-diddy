@@ -10,6 +10,7 @@ async def listener(update: Update, context: CallbackContext) -> None:
     if not msg or not msg.text or not orchestrator.in_persona_thread(msg):
         return
     await orchestrator.handle_text(update, context, msg)
+    await orchestrator.maybe_react(context.bot, msg)
 
 
 async def media_listener(update: Update, context: CallbackContext) -> None:
@@ -22,3 +23,4 @@ async def media_listener(update: Update, context: CallbackContext) -> None:
     if not text:
         return
     await orchestrator.handle_media(update, context, msg, text)
+    await orchestrator.maybe_react(context.bot, msg)

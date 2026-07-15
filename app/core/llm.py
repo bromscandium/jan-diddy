@@ -15,6 +15,8 @@ class LLMSettings(BaseSettings):
     CAPTION_ENABLED: bool = True
     CAPTION_TIMEOUT: float = 120.0
     CAPTION_MAX_BYTES: int = 8_000_000
+    REACT_ENABLED: bool = True
+    REACT_COOLDOWN_SEC: int = 90
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_nested_delimiter="__")
 
