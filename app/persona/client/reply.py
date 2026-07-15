@@ -4,7 +4,7 @@ from app.persona.client.base import request
 
 async def rewrite(seed: str, timeout: float = 20.0) -> str | None:
     payload = {"messages": [{"username": "jan", "text": seed}], "mode": "rewrite"}
-    return await request("POST", "/v1/generate-reply", timeout=timeout, json=payload, key="reply")
+    return await request("POST", "/v1/text", timeout=timeout, json=payload, key="reply")
 
 
 async def generate(
@@ -22,5 +22,5 @@ async def generate(
         "target": target,
     }
     return await request(
-        "POST", "/v1/generate-reply", timeout=llm_settings.PERSONA_ENGINE_TIMEOUT, json=payload, key="reply", retries=2
+        "POST", "/v1/text", timeout=llm_settings.PERSONA_ENGINE_TIMEOUT, json=payload, key="reply", retries=2
     )
