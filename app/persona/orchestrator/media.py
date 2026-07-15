@@ -28,9 +28,22 @@ async def photo_caption(msg, bot) -> str | None:
     try:
         f = await bot.get_file(photo.file_id)
         buf = await f.download_as_bytearray()
-        return await client.caption(base64.b64encode(bytes(buf)).decode())
+        return await client.image(base64.b64encode(bytes(buf)).decode())
     except Exception as exc:
         logger.warning(f"photo caption failed: {exc}")
+        return None
+
+
+async def gif_caption(msg, bot) -> str | None:
+    thumb = msg.animation.thumbnail
+    if not thumb:
+        return None
+    try:
+        f = await bot.get_file(thumb.file_id)
+        buf = await f.download_as_bytearray()
+        return await client.gif(base64.b64encode(bytes(buf)).decode())
+    except Exception as exc:
+        logger.warning(f"gif caption failed: {exc}")
         return None
 
 
@@ -42,6 +55,10 @@ async def media_text(msg, bot) -> str | None:
         cap = await photo_caption(msg, bot)
         if cap:
             label = f"[фото: {cap}]"
+    elif msg.animation and llm_settings.CAPTION_ENABLED:
+        cap = await gif_caption(msg, bot)
+        if cap:
+            label = f"[гіф: {cap}]"
     caption = (msg.caption or "").strip()
     has_link = any(e.type in ("url", "text_link") for e in (msg.caption_entities or []))
     if caption and not has_link and "http" not in caption.lower() and not caption.startswith("/"):
