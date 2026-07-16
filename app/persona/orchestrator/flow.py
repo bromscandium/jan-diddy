@@ -60,6 +60,12 @@ async def _reply(update, context: CallbackContext, msg, current_text: str, user_
     if not reply:
         return
 
+    norm = reply.strip().casefold()
+    if norm in await state.recent_replies(chat_id, thread_id):
+        logger.debug(f"skip duplicate reply {reply!r}")
+        return
+    await state.remember_reply(chat_id, thread_id, norm)
+
     if addressed:
         reply_to = msg.message_id
     else:

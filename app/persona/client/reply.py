@@ -7,6 +7,10 @@ async def rewrite(seed: str, timeout: float = 20.0) -> str | None:
     return await request("POST", "/v1/text", timeout=timeout, json=payload, key="reply")
 
 
+async def greet(timeout: float = 30.0) -> str | None:
+    return await request("POST", "/v1/text", timeout=timeout, json={"messages": [], "mode": "greeting"}, key="reply")
+
+
 async def generate(
     messages: list[dict],
     chat_id: int,

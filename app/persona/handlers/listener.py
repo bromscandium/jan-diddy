@@ -11,6 +11,7 @@ async def listener(update: Update, context: CallbackContext) -> None:
         return
     await orchestrator.handle_text(update, context, msg)
     await orchestrator.maybe_react(context.bot, msg)
+    await orchestrator.maybe_refresh_dossiers(msg)
 
 
 async def media_listener(update: Update, context: CallbackContext) -> None:
@@ -24,3 +25,4 @@ async def media_listener(update: Update, context: CallbackContext) -> None:
         return
     await orchestrator.handle_media(update, context, msg, text)
     await orchestrator.maybe_react(context.bot, msg)
+    await orchestrator.maybe_refresh_dossiers(msg)

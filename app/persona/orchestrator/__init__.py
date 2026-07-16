@@ -1,3 +1,4 @@
+from app.persona.orchestrator.dossier import maybe_refresh_dossiers
 from app.persona.orchestrator.flow import handle_media, handle_text
 from app.persona.orchestrator.ingest import in_persona_thread, ingest
 from app.persona.orchestrator.media import media_text
@@ -9,6 +10,7 @@ __all__ = [
     "in_persona_thread",
     "ingest",
     "maybe_react",
+    "maybe_refresh_dossiers",
     "media_text",
     "reaction_emoji",
 ]

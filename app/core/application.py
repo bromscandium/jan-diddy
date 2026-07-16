@@ -5,10 +5,12 @@ from telegram.ext import Application, ApplicationBuilder, CallbackContext
 
 from app.core.bot import bot_settings
 from app.core.http import close_http_session, init_http_session
+from app.core.llm import llm_settings
 from app.core.logger import logger
 from app.core.postgres import close_db, connect_db
 from app.core.redis import close_redis, init_redis
 from app.handlers import setup_handlers
+from app.persona import client
 
 
 class BotApplication:
@@ -29,6 +31,7 @@ class BotApplication:
         await init_http_session()
         logger.info("Bot started successfully")
         await self._notify_admin(app, "Bot started successfully")
+        await self._greet(app)
 
     async def _on_shutdown(self, app: Application) -> None:
         await close_db(app)
@@ -42,6 +45,18 @@ class BotApplication:
             await app.bot.send_message(chat_id=bot_settings.ADMIN_CHAT_ID, text=text)
         except Exception as exc:
             logger.warning(f"admin notify failed ({text!r}): {exc!r}")
+
+    async def _greet(self, app: Application) -> None:
+        if not llm_settings.GREET_ON_START:
+            return
+        try:
+            text = await client.greet()
+            if text:
+                await app.bot.send_message(
+                    chat_id=bot_settings.CHAT_ID, message_thread_id=llm_settings.PERSONA_THREAD_ID, text=text
+                )
+        except Exception as exc:
+            logger.warning(f"startup greeting failed: {exc!r}")
 
     async def _on_error(self, update: object, context: CallbackContext) -> None:
         error = context.error

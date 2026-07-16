@@ -49,6 +49,27 @@ async def get_context(chat_id: int, thread_id: int | None) -> list[dict]:
     return items
 
 
+async def recent_replies(chat_id: int, thread_id: int | None) -> list[str]:
+    return await redis().lrange(f"{_prefix(chat_id, thread_id)}:botreplies", 0, 4)
+
+
+async def remember_reply(chat_id: int, thread_id: int | None, text: str) -> None:
+    p = _prefix(chat_id, thread_id)
+    pipe = redis().pipeline()
+    pipe.lpush(f"{p}:botreplies", text)
+    pipe.ltrim(f"{p}:botreplies", 0, 4)
+    pipe.expire(f"{p}:botreplies", 3600)
+    await pipe.execute()
+
+
+async def bump_dossier(chat_id: int, thread_id: int | None, every: int) -> bool:
+    key = f"{_prefix(chat_id, thread_id)}:doss_ctr"
+    if await redis().incr(key) < every:
+        return False
+    await redis().delete(key)
+    return True
+
+
 async def count_after(chat_id: int, thread_id: int | None, ts_cutoff: int, ts_until: int | None = None) -> int:
     raw = await redis().lrange(f"{_prefix(chat_id, thread_id)}:buf", 0, llm_settings.BUFFER_SIZE - 1)
     total = 0
