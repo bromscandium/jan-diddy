@@ -2,7 +2,13 @@
 
 Version 6.9.1
 
-Asynchronous Telegram bot built with Python 3.14, python-telegram-bot, and Tortoise ORM. It combines classic group management (moderation, info, fun commands) with an AI persona that passively listens to the chat and occasionally replies in character via a separate LLM engine.
+Asynchronous Telegram bot built with Python 3.14, python-telegram-bot, and Tortoise ORM. It combines classic group management (moderation, info, fun commands) with an AI persona that passively listens to the chat and occasionally replies in character via a separate LLM engine ([jan-diddy-llm](https://github.com/bromscandium/jan-diddy-llm)).
+
+## Language
+This project is built for **Ukrainian**. The persona and bot content target Ukrainian, and Ukrainian identifiers, keywords, prompt content, and any Ukrainian strings that appear anywhere in the code, logs, or config are intentional and reflect the target language.
+
+## License
+Proprietary — all rights reserved. See [LICENSE](LICENSE). No use, copying, or distribution without the author's prior written consent.
 
 ## Architecture
 

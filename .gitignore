@@ -1,4 +1,7 @@
-.env
+.env*
+!.env.sample
+*.bak
+*.bak.*
 .venv
 .idea
 __pycache__
@@ -6,4 +9,3 @@ __pycache__
 .pytest_cache
 mocks/
 .claude
-.env.dev
