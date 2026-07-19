@@ -11,6 +11,7 @@ from app.core.postgres import close_db, connect_db
 from app.core.redis import close_redis, init_redis
 from app.handlers import setup_handlers
 from app.persona import client
+from app.persona.scheduler import schedule_memory
 
 
 class BotApplication:
@@ -32,6 +33,7 @@ class BotApplication:
         logger.info("Bot started successfully")
         await self._notify_admin(app, "Bot started successfully")
         await self._greet(app)
+        await schedule_memory(app)
 
     async def _on_shutdown(self, app: Application) -> None:
         await close_db(app)

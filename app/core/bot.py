@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,6 +15,7 @@ class BotSettings(BaseSettings):
     TIMEZONE: str = "Europe/London"
     BANNED_BY_ID: list[int] = []
     DEBUG: bool = False
+    REPLY_MODE: Literal["off", "addressed", "all"] = "all"
 
     PORT: int = 8080
     WEBHOOK_DOMAIN: str | None = None

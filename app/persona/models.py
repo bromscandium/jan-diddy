@@ -69,3 +69,14 @@ class UserProfiles(LLMModel):
     class Meta(LLMModel.Meta):
         abstract = False
         table = "user_profiles"
+
+
+class ChatMemory(LLMModel):
+    chat_id = fields.BigIntField()
+    thread_id = fields.BigIntField(null=True)
+    day = fields.DateField()
+    summary = fields.TextField()
+
+    class Meta(LLMModel.Meta):
+        abstract = False
+        table = "chat_memory"

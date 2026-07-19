@@ -3,6 +3,7 @@ import time
 
 from telegram.ext import CallbackContext
 
+from app.core.bot import bot_settings
 from app.core.llm import trigger_config
 from app.core.logger import logger
 from app.persona import client, history, profiles, scoring, state, triggers
@@ -27,9 +28,18 @@ async def _reply(update, context: CallbackContext, msg, current_text: str, user_
     thread_id = msg.message_thread_id
     reply_to_id = msg.reply_to_message.message_id if msg.reply_to_message else None
 
+    if bot_settings.REPLY_MODE == "off":
+        logger.debug("skip: REPLY_MODE=off")
+        return
+
     cfg = trigger_config()
     last_bot = await scoring.last_bot_message(chat_id, thread_id)
     addressed = await is_addressed(msg, context, last_bot)
+
+    if bot_settings.REPLY_MODE == "addressed" and not addressed:
+        logger.debug("skip: REPLY_MODE=addressed and not addressed")
+        return
+
     track = "addr" if addressed else "spont"
     track_cfg = cfg.addressed if addressed else cfg.spontaneous
 

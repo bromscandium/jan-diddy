@@ -20,6 +20,7 @@ class LLMSettings(BaseSettings):
     GREET_ON_START: bool = True
     DOSSIER_AUTO_REFRESH: bool = False
     DOSSIER_REFRESH_EVERY: int = 100
+    MEMORY_AUTO_REFRESH: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_nested_delimiter="__")
 
